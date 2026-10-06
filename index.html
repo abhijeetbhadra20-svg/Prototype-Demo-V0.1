@@ -1,563 +1,90 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Gadget AI — Room Prototype V0.3</title>
-
-  <style>
-    :root {
-      --bg: #050505;
-      --panel: rgba(10, 10, 10, 0.72);
-      --line: rgba(255, 255, 255, 0.12);
-      --text: rgba(255, 255, 255, 0.88);
-      --muted: rgba(255, 255, 255, 0.42);
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      touch-action: none;
-    }
-
-    #app {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      background: #050505;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    #topBar {
-      position: fixed;
-      top: env(safe-area-inset-top, 0px);
-      left: 0;
-      width: 100%;
-      padding: 12px 12px 0;
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    #title {
-      display: inline-flex;
-      align-items: center;
-      min-height: 30px;
-      padding: 6px 9px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--panel);
-      backdrop-filter: blur(8px);
-      font-size: 12px;
-      letter-spacing: 0.04em;
-    }
-
-    #reset {
-      position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 12px);
-      right: 12px;
-      z-index: 6;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 10px;
-      min-width: 42px;
-      min-height: 32px;
-      font-size: 12px;
-      padding: 0 10px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-    }
-
-    #joystick {
-      position: fixed;
-      left: 18px;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-      width: 112px;
-      height: 112px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.035);
-      box-shadow: inset 0 0 20px rgba(255,255,255,0.025);
-      z-index: 7;
-      touch-action: none;
-    }
-
-    #stick {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 48px;
-      height: 48px;
-      margin-left: -24px;
-      margin-top: -24px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.13);
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
-      transform: translate3d(0,0,0);
-      pointer-events: none;
-    }
-
-    #hint {
-      position: fixed;
-      left: 50%;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-      transform: translateX(-50%);
-      z-index: 4;
-      color: var(--muted);
-      font-size: 11px;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-
-    #error {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      text-align: center;
-      color: #fff;
-      background: #050505;
-      z-index: 20;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
-    }
-  }
-  </script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Gadget AI — Full 3D Space V0.4</title>
+<style>
+:root{--bg:#777b80;--panel:rgba(38,42,46,.72);--line:rgba(255,255,255,.18);--text:rgba(255,255,255,.9);--muted:rgba(255,255,255,.62)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
+#app{position:fixed;inset:0;overflow:hidden}canvas{display:block;width:100%;height:100%}
+#topBar{position:fixed;top:env(safe-area-inset-top,0px);left:0;width:100%;padding:12px;pointer-events:none;z-index:5}
+#title,#reset{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);color:var(--text);border-radius:10px}
+#title{display:inline-flex;min-height:30px;padding:6px 9px;font-size:12px;letter-spacing:.04em}
+#reset{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:6;min-width:42px;min-height:32px;font-size:12px;padding:0 10px}
+#joystick{position:fixed;left:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:112px;height:112px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.09);box-shadow:inset 0 0 24px rgba(255,255,255,.05);z-index:7;touch-action:none}
+#stick{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px;border-radius:50%;background:rgba(255,255,255,.24);border:1px solid rgba(255,255,255,.25);box-shadow:0 4px 18px rgba(0,0,0,.2);transform:translate3d(0,0,0);pointer-events:none}
+#hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);z-index:4;color:var(--muted);font-size:11px;white-space:nowrap;pointer-events:none}
+#error{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;background:#666;z-index:20;font-size:13px}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 </head>
-
 <body>
-  <div id="app"></div>
-
-  <div id="topBar">
-    <div id="title">GADGET AI · ROOM V0.3</div>
-  </div>
-
-  <button id="reset" aria-label="Reset view">Reset</button>
-
-  <div id="joystick" aria-label="Movement joystick">
-    <div id="stick"></div>
-  </div>
-
-  <div id="hint">Drag to look · joystick / WASD to move</div>
-  <div id="error"></div>
-
-  <script type="module">
-    import * as THREE from "three";
-    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
-    const ROOM = {
-      width: 10,
-      depth: 7,
-      height: 4
-    };
-
-    const PLAYER = {
-      radius: 0.28,
-      eyeHeight: 1.55,
-      speed: 2.8
-    };
-
-    const app = document.getElementById("app");
-    const errorBox = document.getElementById("error");
-
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.style.display = "flex";
-    }
-
-    let renderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: "high-performance"
-      });
-    } catch (err) {
-      showError("WebGL could not start on this device.");
-      throw err;
-    }
-
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.9;
-    app.appendChild(renderer.domElement);
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050505);
-
-    const camera = new THREE.PerspectiveCamera(
-      58,
-      window.innerWidth / window.innerHeight,
-      0.05,
-      50
-    );
-
-    const DEFAULT = {
-      player: new THREE.Vector3(0, 0, 2.0),
-      camera: new THREE.Vector3(0, PLAYER.eyeHeight + 0.35, 5.0),
-      target: new THREE.Vector3(0, 1.0, 1.0)
-    };
-
-    camera.position.copy(DEFAULT.camera);
-
-    // Soft ambient light + one ceiling light keeps the dark room readable.
-    scene.add(new THREE.HemisphereLight(0x8b8b8b, 0x111111, 1.2));
-
-    const ceilingLight = new THREE.PointLight(0xffffff, 4.5, 12, 2);
-    ceilingLight.position.set(0, ROOM.height - 0.25, 0);
-    scene.add(ceilingLight);
-
-    // --- ROOM ---------------------------------------------------------------
-
-    const room = new THREE.Group();
-    scene.add(room);
-
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x101010,
-      roughness: 0.95,
-      metalness: 0.0
-    });
-
-    const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x0b0b0b,
-      roughness: 1,
-      metalness: 0
-    });
-
-    const trimMat = new THREE.LineBasicMaterial({
-      color: 0x6f6f6f,
-      transparent: true,
-      opacity: 0.36
-    });
-
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(ROOM.width, ROOM.depth),
-      floorMat
-    );
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0;
-    room.add(floor);
-
-    // Floor grid: exactly room-sized, no infinite repositioning.
-    const floorGrid = new THREE.GridHelper(
-      Math.max(ROOM.width, ROOM.depth),
-      Math.max(ROOM.width, ROOM.depth),
-      0x8a8a8a,
-      0x343434
-    );
-    floorGrid.scale.set(
-      ROOM.width / Math.max(ROOM.width, ROOM.depth),
-      1,
-      ROOM.depth / Math.max(ROOM.width, ROOM.depth)
-    );
-    floorGrid.position.y = 0.012;
-
-    if (Array.isArray(floorGrid.material)) {
-      floorGrid.material.forEach(m => {
-        m.transparent = true;
-        m.opacity = 0.42;
-      });
-    } else {
-      floorGrid.material.transparent = true;
-      floorGrid.material.opacity = 0.42;
-    }
-
-    room.add(floorGrid);
-
-    function addWall(size, position) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(size.x, size.y, size.z),
-        wallMat
-      );
-      mesh.position.copy(position);
-      room.add(mesh);
-      return mesh;
-    }
-
-    const wallThickness = 0.14;
-
-    // Four fixed walls.
-    addWall(
-      new THREE.Vector3(ROOM.width, ROOM.height, wallThickness),
-      new THREE.Vector3(0, ROOM.height / 2, -ROOM.depth / 2)
-    );
-
-    addWall(
-      new THREE.Vector3(ROOM.width, ROOM.height, wallThickness),
-      new THREE.Vector3(0, ROOM.height / 2, ROOM.depth / 2)
-    );
-
-    addWall(
-      new THREE.Vector3(wallThickness, ROOM.height, ROOM.depth),
-      new THREE.Vector3(-ROOM.width / 2, ROOM.height / 2, 0)
-    );
-
-    addWall(
-      new THREE.Vector3(wallThickness, ROOM.height, ROOM.depth),
-      new THREE.Vector3(ROOM.width / 2, ROOM.height / 2, 0)
-    );
-
-    // Simple room outline, deliberately subtle.
-    const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(
-        new THREE.BoxGeometry(ROOM.width, ROOM.height, ROOM.depth)
-      ),
-      trimMat
-    );
-    outline.position.y = ROOM.height / 2;
-    room.add(outline);
-
-    // Ceiling is present but hidden for a clean interior viewport.
-    const ceiling = new THREE.Mesh(
-      new THREE.PlaneGeometry(ROOM.width, ROOM.depth),
-      new THREE.MeshStandardMaterial({
-        color: 0x080808,
-        roughness: 1,
-        side: THREE.DoubleSide
-      })
-    );
-    ceiling.rotation.x = Math.PI / 2;
-    ceiling.position.y = ROOM.height;
-    ceiling.visible = false;
-    room.add(ceiling);
-
-    // --- TEMP PLAYER ---------------------------------------------------------
-    // Small placeholder only. Replace later with the actual character.
-    const player = new THREE.Group();
-
-    const body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(PLAYER.radius, 0.72, 4, 10),
-      new THREE.MeshStandardMaterial({
-        color: 0xd8d8d8,
-        roughness: 0.82
-      })
-    );
-    body.position.y = 0.62;
-    player.add(body);
-
-    const playerRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.34, 0.39, 32),
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide
-      })
-    );
-    playerRing.rotation.x = -Math.PI / 2;
-    playerRing.position.y = 0.01;
-    player.add(playerRing);
-
-    player.position.copy(DEFAULT.player);
-    scene.add(player);
-
-    // --- CAMERA --------------------------------------------------------------
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.enablePan = false;
-    controls.minDistance = 2.0;
-    controls.maxDistance = 6.4;
-    controls.minPolarAngle = 0.55;
-    controls.maxPolarAngle = 1.62;
-    controls.target.copy(DEFAULT.target);
-
-    // Keep camera inside the room.
-    function clampCamera() {
-      const limitX = ROOM.width / 2 - 0.35;
-      const limitZ = ROOM.depth / 2 - 0.35;
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -limitX, limitX);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -limitZ, limitZ);
-      camera.position.y = THREE.MathUtils.clamp(camera.position.y, 0.55, ROOM.height - 0.35);
-
-      controls.target.x = THREE.MathUtils.clamp(
-        controls.target.x,
-        -ROOM.width / 2 + 0.45,
-        ROOM.width / 2 - 0.45
-      );
-      controls.target.z = THREE.MathUtils.clamp(
-        controls.target.z,
-        -ROOM.depth / 2 + 0.45,
-        ROOM.depth / 2 - 0.45
-      );
-      controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0.4, ROOM.height - 0.45);
-    }
-
-    // Reset camera + placeholder player.
-    function resetScene() {
-      player.position.copy(DEFAULT.player);
-      camera.position.copy(DEFAULT.camera);
-      controls.target.copy(DEFAULT.target);
-      controls.update();
-    }
-
-    document.getElementById("reset").addEventListener("click", resetScene);
-
-    // --- MOVEMENT ------------------------------------------------------------
-
-    const keys = new Set();
-    let joystickX = 0;
-    let joystickY = 0;
-
-    window.addEventListener("keydown", (e) => {
-      keys.add(e.key.toLowerCase());
-    });
-
-    window.addEventListener("keyup", (e) => {
-      keys.delete(e.key.toLowerCase());
-    });
-
-    const joystick = document.getElementById("joystick");
-    const stick = document.getElementById("stick");
-
-    let pointerId = null;
-
-    function updateStick(clientX, clientY) {
-      const r = joystick.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-
-      const max = r.width * 0.33;
-      const len = Math.hypot(dx, dy);
-
-      if (len > max) {
-        dx = dx / len * max;
-        dy = dy / len * max;
-      }
-
-      joystickX = dx / max;
-      joystickY = dy / max;
-
-      stick.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-    }
-
-    function releaseStick() {
-      pointerId = null;
-      joystickX = 0;
-      joystickY = 0;
-      stick.style.transform = "translate3d(0,0,0)";
-    }
-
-    joystick.addEventListener("pointerdown", (e) => {
-      pointerId = e.pointerId;
-      joystick.setPointerCapture(e.pointerId);
-      updateStick(e.clientX, e.clientY);
-    });
-
-    joystick.addEventListener("pointermove", (e) => {
-      if (e.pointerId !== pointerId) return;
-      updateStick(e.clientX, e.clientY);
-    });
-
-    joystick.addEventListener("pointerup", releaseStick);
-    joystick.addEventListener("pointercancel", releaseStick);
-
-    const moveDir = new THREE.Vector3();
-
-    function updatePlayer(delta) {
-      let x = joystickX;
-      let z = joystickY;
-
-      if (keys.has("w") || keys.has("arrowup")) z -= 1;
-      if (keys.has("s") || keys.has("arrowdown")) z += 1;
-      if (keys.has("a") || keys.has("arrowleft")) x -= 1;
-      if (keys.has("d") || keys.has("arrowright")) x += 1;
-
-      const len = Math.hypot(x, z);
-      if (len < 0.01) return;
-
-      x /= Math.max(1, len);
-      z /= Math.max(1, len);
-
-      moveDir.set(x, 0, z);
-      const amount = PLAYER.speed * delta;
-
-      const nextX = player.position.x + moveDir.x * amount;
-      const nextZ = player.position.z + moveDir.z * amount;
-
-      const limitX = ROOM.width / 2 - 0.55;
-      const limitZ = ROOM.depth / 2 - 0.55;
-
-      player.position.x = THREE.MathUtils.clamp(nextX, -limitX, limitX);
-      player.position.z = THREE.MathUtils.clamp(nextZ, -limitZ, limitZ);
-
-      // Face direction of travel.
-      player.rotation.y = Math.atan2(moveDir.x, moveDir.z);
-
-      // Keep camera gently following the placeholder.
-      const follow = 0.035;
-      controls.target.x = THREE.MathUtils.lerp(
-        controls.target.x,
-        player.position.x,
-        follow
-      );
-      controls.target.z = THREE.MathUtils.lerp(
-        controls.target.z,
-        player.position.z,
-        follow
-      );
-    }
-
-    // --- RESIZE --------------------------------------------------------------
-
-    function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", () => {
-      setTimeout(onResize, 100);
-    });
-
-    // --- LOOP ----------------------------------------------------------------
-
-    const clock = new THREE.Clock();
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const delta = Math.min(clock.getDelta(), 0.05);
-
-      updatePlayer(delta);
-      controls.update();
-      clampCamera();
-
-      renderer.render(scene, camera);
-    }
-
-    resetScene();
-    animate();
-  </script>
-</body>
-</html>
+<div id="app"></div><div id="topBar"><div id="title">GADGET AI · FULL 3D SPACE V0.4</div></div>
+<button id="reset">Reset</button>
+<div id="joystick"><div id="stick"></div></div>
+<div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div><div id="error"></div>
+<script type="module">
+import * as THREE from "three";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+
+const app=document.getElementById("app"),errorBox=document.getElementById("error");
+function showError(m){errorBox.textContent=m;errorBox.style.display="flex"}
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"})}catch(e){showError("WebGL could not start on this device.");throw e}
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;app.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x777b80);
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.03,4000);
+const DEFAULT_CAMERA=new THREE.Vector3(8,5.5,10),DEFAULT_TARGET=new THREE.Vector3(0,.4,0);camera.position.copy(DEFAULT_CAMERA);
+
+scene.add(new THREE.HemisphereLight(0xf0f2f4,0x41454a,1.35));
+const sun=new THREE.DirectionalLight(0xffffff,1.7);sun.position.set(80,140,60);scene.add(sun);
+const fill=new THREE.DirectionalLight(0xd8e0e8,.55);fill.position.set(-60,35,-90);scene.add(fill);
+
+// Open Blender-like multi-scale workspace.
+const gridRoot=new THREE.Group();scene.add(gridRoot);
+const minorGrid=new THREE.GridHelper(1200,1200,0x9aa0a6,0x666b70);
+const majorGrid=new THREE.GridHelper(1200,120,0xbcc1c6,0x4f555a);
+minorGrid.material.transparent=true;minorGrid.material.opacity=.42;
+majorGrid.material.transparent=true;majorGrid.material.opacity=.62;
+gridRoot.add(minorGrid,majorGrid);
+
+const origin=new THREE.Group();
+const ring=new THREE.Mesh(new THREE.RingGeometry(2.2,2.28,64),new THREE.MeshBasicMaterial({color:0x4c5156,transparent:true,opacity:.7,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2;origin.add(ring);
+const dot=new THREE.Mesh(new THREE.CircleGeometry(.12,24),new THREE.MeshBasicMaterial({color:0x3e4348,transparent:true,opacity:.85,side:THREE.DoubleSide}));
+dot.rotation.x=-Math.PI/2;dot.position.y=.01;origin.add(dot);scene.add(origin);
+
+const axes=new THREE.AxesHelper(3.5);axes.material.transparent=true;axes.material.opacity=.8;scene.add(axes);
+const marker=new THREE.Mesh(new THREE.TorusGeometry(.75,.025,8,48),new THREE.MeshBasicMaterial({color:0x565c62,transparent:true,opacity:.55}));
+marker.rotation.x=-Math.PI/2;marker.position.y=.02;scene.add(marker);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.075;controls.screenSpacePanning=true;controls.zoomToCursor=true;
+controls.minDistance=.15;controls.maxDistance=1500;controls.maxPolarAngle=Math.PI*.98;controls.minPolarAngle=.02;
+controls.target.copy(DEFAULT_TARGET);
+
+const keys=new Set();window.addEventListener("keydown",e=>keys.add(e.key.toLowerCase()));window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+const joystick=document.getElementById("joystick"),stick=document.getElementById("stick");let pointerId=null,jx=0,jy=0;
+function stickMove(x,y){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=x-cx,dy=y-cy,max=r.width*.33,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max}jx=dx/max;jy=dy/max;stick.style.transform=`translate3d(${dx}px,${dy}px,0)`}
+function stickUp(){pointerId=null;jx=jy=0;stick.style.transform="translate3d(0,0,0)"}
+joystick.addEventListener("pointerdown",e=>{pointerId=e.pointerId;joystick.setPointerCapture(e.pointerId);stickMove(e.clientX,e.clientY)});
+joystick.addEventListener("pointermove",e=>{if(e.pointerId===pointerId)stickMove(e.clientX,e.clientY)});
+joystick.addEventListener("pointerup",stickUp);joystick.addEventListener("pointercancel",stickUp);
+
+let speed=1;const moveDir=new THREE.Vector3(),forward=new THREE.Vector3(),right=new THREE.Vector3();
+function updateMovement(dt){
+ let x=jx,z=jy;if(keys.has("w")||keys.has("arrowup"))z-=1;if(keys.has("s")||keys.has("arrowdown"))z+=1;if(keys.has("a")||keys.has("arrowleft"))x-=1;if(keys.has("d")||keys.has("arrowright"))x+=1;if(keys.has("q"))speed=.5;if(keys.has("e"))speed=2;
+ const len=Math.hypot(x,z);if(len<.01)return;x/=Math.max(1,len);z/=Math.max(1,len);
+ camera.getWorldDirection(forward);forward.y=0;forward.normalize();right.crossVectors(forward,camera.up).normalize();
+ moveDir.copy(forward).multiplyScalar(-z).addScaledVector(right,x).normalize();
+ camera.position.addScaledVector(moveDir,dt*6*speed);controls.target.addScaledVector(moveDir,dt*6*speed);
+}
+document.getElementById("reset").onclick=()=>{camera.position.copy(DEFAULT_CAMERA);controls.target.copy(DEFAULT_TARGET);controls.update()};
+function updateGrid(){const snap=20;gridRoot.position.x=Math.floor(camera.position.x/snap)*snap;gridRoot.position.z=Math.floor(camera.position.z/snap)*snap}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,100));
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);updateMovement(dt);updateGrid();controls.update();renderer.render(scene,camera)}animate();
+</script>
+</body></html>
