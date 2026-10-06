@@ -1,90 +1,33 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Gadget AI — Full 3D Space V0.4</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Gadget AI — Full 3D Space V0.5</title>
 <style>
-:root{--bg:#777b80;--panel:rgba(38,42,46,.72);--line:rgba(255,255,255,.18);--text:rgba(255,255,255,.9);--muted:rgba(255,255,255,.62)}
-*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
-#app{position:fixed;inset:0;overflow:hidden}canvas{display:block;width:100%;height:100%}
-#topBar{position:fixed;top:env(safe-area-inset-top,0px);left:0;width:100%;padding:12px;pointer-events:none;z-index:5}
-#title,#reset{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);color:var(--text);border-radius:10px}
-#title{display:inline-flex;min-height:30px;padding:6px 9px;font-size:12px;letter-spacing:.04em}
-#reset{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:6;min-width:42px;min-height:32px;font-size:12px;padding:0 10px}
-#joystick{position:fixed;left:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:112px;height:112px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.09);box-shadow:inset 0 0 24px rgba(255,255,255,.05);z-index:7;touch-action:none}
-#stick{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px;border-radius:50%;background:rgba(255,255,255,.24);border:1px solid rgba(255,255,255,.25);box-shadow:0 4px 18px rgba(0,0,0,.2);transform:translate3d(0,0,0);pointer-events:none}
-#hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);z-index:4;color:var(--muted);font-size:11px;white-space:nowrap;pointer-events:none}
-#error{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;background:#666;z-index:20;font-size:13px}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#85898d;font-family:system-ui,sans-serif;touch-action:none}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+#top{position:fixed;top:12px;left:12px;z-index:5;padding:7px 10px;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;font-size:12px;backdrop-filter:blur(7px)}
+#reset{position:fixed;right:12px;top:12px;z-index:6;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;padding:7px 11px}
+#joy{position:fixed;left:18px;bottom:18px;width:108px;height:108px;border:1px solid #ffffff30;border-radius:50%;background:#ffffff12;z-index:7}.stick{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:#ffffff35;border:1px solid #ffffff35}
+#hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:#ffffff88;font-size:11px;z-index:4;white-space:nowrap}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
-</head>
-<body>
-<div id="app"></div><div id="topBar"><div id="title">GADGET AI · FULL 3D SPACE V0.4</div></div>
-<button id="reset">Reset</button>
-<div id="joystick"><div id="stick"></div></div>
-<div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div><div id="error"></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
+<body><div id="app"></div><div id="top">GADGET AI · FULL 3D SPACE V0.5</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
-import * as THREE from "three";
-import {OrbitControls} from "three/addons/controls/OrbitControls.js";
-
-const app=document.getElementById("app"),errorBox=document.getElementById("error");
-function showError(m){errorBox.textContent=m;errorBox.style.display="flex"}
-let renderer;
-try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"})}catch(e){showError("WebGL could not start on this device.");throw e}
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;app.appendChild(renderer.domElement);
-
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x777b80);
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.03,4000);
-const DEFAULT_CAMERA=new THREE.Vector3(8,5.5,10),DEFAULT_TARGET=new THREE.Vector3(0,.4,0);camera.position.copy(DEFAULT_CAMERA);
-
-scene.add(new THREE.HemisphereLight(0xf0f2f4,0x41454a,1.35));
-const sun=new THREE.DirectionalLight(0xffffff,1.7);sun.position.set(80,140,60);scene.add(sun);
-const fill=new THREE.DirectionalLight(0xd8e0e8,.55);fill.position.set(-60,35,-90);scene.add(fill);
-
-// Open Blender-like multi-scale workspace.
-const gridRoot=new THREE.Group();scene.add(gridRoot);
-const minorGrid=new THREE.GridHelper(1200,1200,0x9aa0a6,0x666b70);
-const majorGrid=new THREE.GridHelper(1200,120,0xbcc1c6,0x4f555a);
-minorGrid.material.transparent=true;minorGrid.material.opacity=.42;
-majorGrid.material.transparent=true;majorGrid.material.opacity=.62;
-gridRoot.add(minorGrid,majorGrid);
-
-const origin=new THREE.Group();
-const ring=new THREE.Mesh(new THREE.RingGeometry(2.2,2.28,64),new THREE.MeshBasicMaterial({color:0x4c5156,transparent:true,opacity:.7,side:THREE.DoubleSide}));
-ring.rotation.x=-Math.PI/2;origin.add(ring);
-const dot=new THREE.Mesh(new THREE.CircleGeometry(.12,24),new THREE.MeshBasicMaterial({color:0x3e4348,transparent:true,opacity:.85,side:THREE.DoubleSide}));
-dot.rotation.x=-Math.PI/2;dot.position.y=.01;origin.add(dot);scene.add(origin);
-
-const axes=new THREE.AxesHelper(3.5);axes.material.transparent=true;axes.material.opacity=.8;scene.add(axes);
-const marker=new THREE.Mesh(new THREE.TorusGeometry(.75,.025,8,48),new THREE.MeshBasicMaterial({color:0x565c62,transparent:true,opacity:.55}));
-marker.rotation.x=-Math.PI/2;marker.position.y=.02;scene.add(marker);
-
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true;controls.dampingFactor=.075;controls.screenSpacePanning=true;controls.zoomToCursor=true;
-controls.minDistance=.15;controls.maxDistance=1500;controls.maxPolarAngle=Math.PI*.98;controls.minPolarAngle=.02;
-controls.target.copy(DEFAULT_TARGET);
-
-const keys=new Set();window.addEventListener("keydown",e=>keys.add(e.key.toLowerCase()));window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
-const joystick=document.getElementById("joystick"),stick=document.getElementById("stick");let pointerId=null,jx=0,jy=0;
-function stickMove(x,y){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=x-cx,dy=y-cy,max=r.width*.33,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max}jx=dx/max;jy=dy/max;stick.style.transform=`translate3d(${dx}px,${dy}px,0)`}
-function stickUp(){pointerId=null;jx=jy=0;stick.style.transform="translate3d(0,0,0)"}
-joystick.addEventListener("pointerdown",e=>{pointerId=e.pointerId;joystick.setPointerCapture(e.pointerId);stickMove(e.clientX,e.clientY)});
-joystick.addEventListener("pointermove",e=>{if(e.pointerId===pointerId)stickMove(e.clientX,e.clientY)});
-joystick.addEventListener("pointerup",stickUp);joystick.addEventListener("pointercancel",stickUp);
-
-let speed=1;const moveDir=new THREE.Vector3(),forward=new THREE.Vector3(),right=new THREE.Vector3();
-function updateMovement(dt){
- let x=jx,z=jy;if(keys.has("w")||keys.has("arrowup"))z-=1;if(keys.has("s")||keys.has("arrowdown"))z+=1;if(keys.has("a")||keys.has("arrowleft"))x-=1;if(keys.has("d")||keys.has("arrowright"))x+=1;if(keys.has("q"))speed=.5;if(keys.has("e"))speed=2;
- const len=Math.hypot(x,z);if(len<.01)return;x/=Math.max(1,len);z/=Math.max(1,len);
- camera.getWorldDirection(forward);forward.y=0;forward.normalize();right.crossVectors(forward,camera.up).normalize();
- moveDir.copy(forward).multiplyScalar(-z).addScaledVector(right,x).normalize();
- camera.position.addScaledVector(moveDir,dt*6*speed);controls.target.addScaledVector(moveDir,dt*6*speed);
-}
-document.getElementById("reset").onclick=()=>{camera.position.copy(DEFAULT_CAMERA);controls.target.copy(DEFAULT_TARGET);controls.update()};
-function updateGrid(){const snap=20;gridRoot.position.x=Math.floor(camera.position.x/snap)*snap;gridRoot.position.z=Math.floor(camera.position.z/snap)*snap}
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
-addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,100));
-const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);updateMovement(dt);updateGrid();controls.update();renderer.render(scene,camera)}animate();
-</script>
-</body></html>
+import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
+const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(8,5.8,11),TARGET=new THREE.Vector3(0,0,0);camera.position.copy(HOME);
+scene.add(new THREE.HemisphereLight(0xffffff,0x50545a,1.25));const light=new THREE.DirectionalLight(0xffffff,1.4);light.position.set(40,80,30);scene.add(light);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x85898d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;scene.add(ground);
+const grid=new THREE.Group();scene.add(grid);
+const minor=new THREE.GridHelper(300,150,0xaeb3b8,0x74797e),major=new THREE.GridHelper(300,30,0xcbd0d4,0x5f656b);minor.material.transparent=true;minor.material.opacity=.2;major.material.transparent=true;major.material.opacity=.45;grid.add(minor,major);
+const axes=new THREE.AxesHelper(2.5);axes.material.transparent=true;axes.material.opacity=.4;scene.add(axes);
+const origin=new THREE.Mesh(new THREE.RingGeometry(.7,.72,48),new THREE.MeshBasicMaterial({color:0x555b60,transparent:true,opacity:.35,side:THREE.DoubleSide}));origin.rotation.x=-Math.PI/2;origin.position.y=.01;scene.add(origin);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.screenSpacePanning=true;controls.zoomToCursor=true;controls.minDistance=1.2;controls.maxDistance=450;controls.maxPolarAngle=Math.PI*.96;controls.target.copy(TARGET);
+const keys=new Set;addEventListener("keydown",e=>keys.add(e.key.toLowerCase()));addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+const joy=document.getElementById("joy"),stick=joy.querySelector(".stick");let pid=null,jx=0,jy=0;
+function moveJoy(x,y){const r=joy.getBoundingClientRect(),dx0=x-(r.left+r.width/2),dy0=y-(r.top+r.height/2),m=r.width*.31,l=Math.hypot(dx0,dy0),dx=l>m?dx0/l*m:dx0,dy=l>m?dy0/l*m:dy0;jx=dx/m;jy=dy/m;stick.style.transform=`translate3d(${dx}px,${dy}px,0)`}
+function up(){pid=null;jx=jy=0;stick.style.transform="translate3d(0,0,0)"}joy.addEventListener("pointerdown",e=>{pid=e.pointerId;joy.setPointerCapture(pid);moveJoy(e.clientX,e.clientY)});joy.addEventListener("pointermove",e=>{if(e.pointerId===pid)moveJoy(e.clientX,e.clientY)});joy.addEventListener("pointerup",up);joy.addEventListener("pointercancel",up);
+const dir=new THREE.Vector3(),fwd=new THREE.Vector3(),right=new THREE.Vector3();
+function movement(dt){let x=jx,z=jy;if(keys.has("w")||keys.has("arrowup"))z--;if(keys.has("s")||keys.has("arrowdown"))z++;if(keys.has("a")||keys.has("arrowleft"))x--;if(keys.has("d")||keys.has("arrowright"))x++;const l=Math.hypot(x,z);if(l<.01)return;x/=l;z/=l;camera.getWorldDirection(fwd);fwd.y=0;fwd.normalize();right.crossVectors(fwd,camera.up).normalize();dir.copy(fwd).multiplyScalar(-z).addScaledVector(right,x).normalize();const d=dt*5.5;camera.position.addScaledVector(dir,d);controls.target.addScaledVector(dir,d)}
+document.getElementById("reset").onclick=()=>{camera.position.copy(HOME);controls.target.copy(TARGET);controls.update()};
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);movement(Math.min(clock.getDelta(),.05));controls.update();renderer.render(scene,camera)}loop();
+</script></body></html>
