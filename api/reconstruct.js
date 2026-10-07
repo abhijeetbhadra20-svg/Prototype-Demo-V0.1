@@ -25,9 +25,9 @@ export default async function handler(req,res){
    headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},
    body:JSON.stringify({
     inputs:[{front:tokens[0]},{left:tokens[1]},{back:tokens[2]},{right:tokens[3]}],
-    model:"P2-20260801",
-    texture:true,pbr:true,texture_quality:"standard",
-    face_limit:12000,orientation:"align_image"
+    model:"v3.1-20260211",
+    texture:true,pbr:true,texture_quality:"detailed",geometry_quality:"detailed",
+    face_limit:500000,orientation:"align_image"
    })
   });
   const tj=await task.json();
