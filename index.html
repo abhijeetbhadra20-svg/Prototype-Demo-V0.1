@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Gadget AI — Character Prototype V0.6</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Gadget AI — Character Prototype V0.7</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#85898d;font-family:system-ui,sans-serif;touch-action:none}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #top{position:fixed;top:12px;left:12px;z-index:5;padding:7px 10px;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;font-size:12px;backdrop-filter:blur(7px)}
@@ -8,12 +8,12 @@
 #hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:#ffffff88;font-size:11px;z-index:4;white-space:nowrap}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
-<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.6</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
+<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
-const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(7,4.6,9),TARGET=new THREE.Vector3(0,1.8,0);camera.position.copy(HOME);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(6.6,4.35,-8.6),TARGET=new THREE.Vector3(0,1.75,-.15);camera.position.copy(HOME);
 scene.add(new THREE.HemisphereLight(0xffffff,0x50545a,1.25));const light=new THREE.DirectionalLight(0xffffff,1.8);light.position.set(25,55,22);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.near=1;light.shadow.camera.far=120;scene.add(light);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x85898d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;ground.receiveShadow=true;scene.add(ground);
 const grid=new THREE.Group();scene.add(grid);
@@ -52,13 +52,13 @@ function makeCompanion(){
   };
 
   // Main rounded toy body
-  add(new THREE.CapsuleGeometry(.82,.90,16,32),blue,[0,1.32,0],[1.02,1.03,.90]);
+  add(new THREE.CapsuleGeometry(.76,.78,18,32),blue,[0,1.30,0],[1.04,1.03,.92]);
 
   // Big rounded head
-  add(new THREE.SphereGeometry(1,48,32),blue,[0,2.72,0],[1.18,1.15,1.04]);
+  add(new THREE.SphereGeometry(1,48,32),blue,[0,2.66,0],[1.27,1.18,1.08]);
 
   // Face panel, sitting naturally on the front
-  add(new THREE.SphereGeometry(1,48,32),white,[0,2.58,-.86],[.96,.82,.23]);
+  add(new THREE.SphereGeometry(1,48,32),white,[0,2.55,-.91],[1.00,.84,.24]);
 
   // Friendly oval eyes
   for(const x of [-.29,.29]){
