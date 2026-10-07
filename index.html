@@ -217,7 +217,7 @@ async function reconstructTurntable(){
       body:JSON.stringify({frames})
     });
     const cj=await create.json();
-    if(!create.ok)throw new Error(cj.error||cj.message||"Reconstruction service unavailable.");
+    if(!create.ok){ const d=cj.detail; const extra=d ? (" | code="+(d.code??"unknown")+" | message="+(d.message||"")+(d.suggestion?" | suggestion="+d.suggestion:"")) : ""; throw new Error((cj.error||cj.message||"Reconstruction service unavailable.")+extra); }
     const taskId=cj.taskId;
     setReconStatus("AI is building the 3D model…");
     for(let i=0;i<120;i++){
