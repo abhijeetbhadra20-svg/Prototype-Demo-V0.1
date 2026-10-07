@@ -35,9 +35,10 @@ export default async function handler(req,res){
     if(!Array.isArray(frames)||frames.length!==4)return res.status(400).json({error:"Exactly 4 extracted video frames are required."});
     const files=await Promise.all(frames.map(uploadFrame));
 
-    // Pixal3D's simpler posed-view endpoint is a better match for a generated turntable:
-    // fixed 0°/90°/180°/270° orbit, no guessed calibration required.
-    // Geometry-only at 1024 is deliberately used first to stay within ZeroGPU limits.
+    // Current Pixal3D Space contract: 4 filepath inputs + seed + FOV + radius
+    // + mesh scale + resolution. The Space's current generate_glb endpoint has
+    // exactly 9 inputs; sending the old 10th texture flag causes a server-side
+    // Gradio 500/Internal Server Error.
     const payload={
       data:[
         files[0],files[1],files[2],files[3],
@@ -45,8 +46,7 @@ export default async function handler(req,res){
         20,     // FOV degrees
         3.1192, // camera radius
         1,      // mesh scale
-        1024,   // resolution
-        false   // textured GLB off for lower GPU/memory usage
+        1024    // resolution
       ]
     };
     const call=await fetch(HF_SPACE+"/gradio_api/call/generate_glb",{
