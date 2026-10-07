@@ -13,7 +13,7 @@
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
-const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(8,5.8,11),TARGET=new THREE.Vector3(0,0,0);camera.position.copy(HOME);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(7,4.6,9),TARGET=new THREE.Vector3(0,1.8,0);camera.position.copy(HOME);
 scene.add(new THREE.HemisphereLight(0xffffff,0x50545a,1.25));const light=new THREE.DirectionalLight(0xffffff,1.4);light.position.set(40,80,30);scene.add(light);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x85898d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;scene.add(ground);
 const grid=new THREE.Group();scene.add(grid);
@@ -117,5 +117,5 @@ function makeCompanion(){
 }
 const companion=makeCompanion();
 scene.add(companion);
-\nlet companionTime=0; const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);movement(dt);companionTime+=dt;companion.position.y=Math.sin(companionTime*2.0)*.025;companion.rotation.y=Math.sin(companionTime*.7)*.035;controls.update();renderer.render(scene,camera)}loop();
+let companionTime=0; const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);movement(dt);companionTime+=dt;companion.position.y=Math.sin(companionTime*2.0)*.025;companion.rotation.y=Math.sin(companionTime*.7)*.035;controls.update();renderer.render(scene,camera)}loop();
 </script></body></html>
