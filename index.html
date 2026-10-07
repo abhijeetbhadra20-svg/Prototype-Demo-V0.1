@@ -12,10 +12,10 @@
 <script type="module">
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(7,4.6,9),TARGET=new THREE.Vector3(0,1.8,0);camera.position.copy(HOME);
-scene.add(new THREE.HemisphereLight(0xffffff,0x50545a,1.25));const light=new THREE.DirectionalLight(0xffffff,1.4);light.position.set(40,80,30);scene.add(light);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x85898d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;scene.add(ground);
+scene.add(new THREE.HemisphereLight(0xffffff,0x50545a,1.25));const light=new THREE.DirectionalLight(0xffffff,1.8);light.position.set(25,55,22);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.near=1;light.shadow.camera.far=120;scene.add(light);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x85898d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.03;ground.receiveShadow=true;scene.add(ground);
 const grid=new THREE.Group();scene.add(grid);
 const minor=new THREE.GridHelper(300,150,0xaeb3b8,0x74797e),major=new THREE.GridHelper(300,30,0xcbd0d4,0x5f656b);minor.material.transparent=true;minor.material.opacity=.2;major.material.transparent=true;major.material.opacity=.45;grid.add(minor,major);
 const axes=new THREE.AxesHelper(2.5);axes.material.transparent=true;axes.material.opacity=.4;scene.add(axes);
@@ -35,13 +35,11 @@ function makeCompanion(){
   const root=new THREE.Group();
   root.name="CompanionPrototype";
 
-  const blue=new THREE.MeshStandardMaterial({color:0x1599d0,roughness:.68,metalness:.02});
-  const blueDark=new THREE.MeshStandardMaterial({color:0x0b72ab,roughness:.78});
-  const white=new THREE.MeshStandardMaterial({color:0xf4f1e9,roughness:.62});
-  const whiteSoft=new THREE.MeshStandardMaterial({color:0xfffbf2,roughness:.7});
-  const black=new THREE.MeshStandardMaterial({color:0x111318,roughness:.38});
-  const red=new THREE.MeshStandardMaterial({color:0xe52f2f,roughness:.52});
-  const yellow=new THREE.MeshStandardMaterial({color:0xf2c536,roughness:.5,metalness:.05});
+  const blue=new THREE.MeshStandardMaterial({color:0x1698d1,roughness:.48,metalness:.03});
+  const white=new THREE.MeshStandardMaterial({color:0xf7f2e8,roughness:.55});
+  const black=new THREE.MeshStandardMaterial({color:0x17191d,roughness:.38});
+  const red=new THREE.MeshStandardMaterial({color:0xe33232,roughness:.46});
+  const yellow=new THREE.MeshStandardMaterial({color:0xf1c534,roughness:.42,metalness:.04});
 
   const add=(geo,mat,pos,scale=[1,1,1])=>{
     const m=new THREE.Mesh(geo,mat);
@@ -53,73 +51,75 @@ function makeCompanion(){
     return m;
   };
 
-  // torso: compact rounded robot body
-  add(new THREE.SphereGeometry(1,40,28),blue,[0,1.42,0],[.98,1.08,.78]);
+  // Main rounded toy body
+  add(new THREE.CapsuleGeometry(.82,.90,16,32),blue,[0,1.32,0],[1.02,1.03,.90]);
 
-  // head: intentionally oversized and rounded
-  add(new THREE.SphereGeometry(1,48,32),blue,[0,2.72,0],[1.22,1.16,.98]);
+  // Big rounded head
+  add(new THREE.SphereGeometry(1,48,32),blue,[0,2.72,0],[1.18,1.15,1.04]);
 
-  // large cream face area
-  add(new THREE.SphereGeometry(1,48,28),whiteSoft,[0,2.58,-.83],[.98,.82,.23]);
+  // Face panel, sitting naturally on the front
+  add(new THREE.SphereGeometry(1,48,32),white,[0,2.58,-.86],[.96,.82,.23]);
 
-  // eyes
-  for(const x of [-.34,.34]){
-    add(new THREE.SphereGeometry(1,32,24),whiteSoft,[x,3.00,-1.02],[.29,.39,.14]);
-    add(new THREE.SphereGeometry(.12,24,18),black,[x,2.99,-1.145],[.78,1,.45]);
-    add(new THREE.SphereGeometry(.038,16,12),whiteSoft,[x-.018,3.025,-1.18],[.8,1,.35]);
+  // Friendly oval eyes
+  for(const x of [-.29,.29]){
+    add(new THREE.SphereGeometry(1,32,24),white,[x,2.96,-1.06],[.25,.33,.12]);
+    add(new THREE.SphereGeometry(.105,24,18),black,[x,2.965,-1.16],[.72,1,.44]);
   }
 
-  // nose + short bridge
-  add(new THREE.SphereGeometry(.14,24,18),red,[0,2.67,-1.18],[1,.96,.7]);
-  add(new THREE.CylinderGeometry(.018,.018,.25,8),black,[0,2.48,-1.085],[1,1,.7]);
+  // Round red nose
+  add(new THREE.SphereGeometry(.14,28,20),red,[0,2.69,-1.18],[1,1,.78]);
 
-  // smiling open mouth
-  add(new THREE.SphereGeometry(1,36,24),black,[0,2.15,-.99],[.52,.43,.12]);
-  add(new THREE.SphereGeometry(1,32,20),red,[0,2.05,-1.065],[.34,.16,.055]);
-  add(new THREE.TorusGeometry(.41,.035,10,40,Math.PI),black,[0,2.20,-1.12],[1,.82,.8]);
+  // Very subtle smile: a smooth curved line, not a giant open mouth
+  const smileCurve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-.40,2.34,-1.075),
+    new THREE.Vector3(-.19,2.24,-1.09),
+    new THREE.Vector3(0,2.21,-1.095),
+    new THREE.Vector3(.19,2.24,-1.09),
+    new THREE.Vector3(.40,2.34,-1.075)
+  ]);
+  const smile=new THREE.Mesh(new THREE.TubeGeometry(smileCurve,24,.018,6,false),black);
+  root.add(smile);
 
-  // whiskers
-  const whisker=(side,y,tilt)=>{
-    const w=add(new THREE.CylinderGeometry(.012,.012,.62,8),black,[side*.58,y,-1.01]);
-    w.rotation.z=Math.PI/2 + side*tilt;
+  // Nose-to-mouth line
+  add(new THREE.CylinderGeometry(.014,.014,.20,8),black,[0,2.47,-1.095],[1,1,.75]);
+
+  // Whiskers: three thin curved-ish strokes on each side
+  const makeWhisker=(side,y,dy)=>{
+    const x=side;
+    const curve=new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side*.33,y,-1.065),
+      new THREE.Vector3(side*.58,y+dy*.35,-1.045),
+      new THREE.Vector3(side*.82,y+dy,-1.02)
+    ]);
+    root.add(new THREE.Mesh(new THREE.TubeGeometry(curve,12,.010,5,false),black));
   };
-  whisker(-1,2.47,.08); whisker(-1,2.56,0); whisker(-1,2.65,-.08);
-  whisker(1,2.47,-.08); whisker(1,2.56,0); whisker(1,2.65,.08);
+  makeWhisker(-1,2.48,.09); makeWhisker(-1,2.56,0); makeWhisker(-1,2.64,-.08);
+  makeWhisker(1,2.48,-.09); makeWhisker(1,2.56,0); makeWhisker(1,2.64,.08);
 
-  // collar + bell
-  add(new THREE.TorusGeometry(.76,.085,14,56),red,[0,1.98,0],[1,1,.77]);
-  add(new THREE.SphereGeometry(.17,24,18),yellow,[0,1.83,-.72],[1,1,.75]);
-  add(new THREE.TorusGeometry(.07,.023,8,24),black,[0,1.78,-.835],[1,1,.7]);
+  // Collar and bell
+  add(new THREE.TorusGeometry(.70,.075,16,64),red,[0,1.95,0],[1,1,.84]);
+  add(new THREE.SphereGeometry(.17,28,20),yellow,[0,1.82,-.68],[1,1,.78]);
+  add(new THREE.TorusGeometry(.065,.018,8,24),black,[0,1.79,-.80],[1,1,.7]);
 
-  // large rounded arms
+  // Rounded arms
   for(const side of [-1,1]){
-    const arm=add(new THREE.CapsuleGeometry(.22,.72,8,16),blue,[side*.88,1.42,-.01],[1,.98,.9]);
-    arm.rotation.z=side*.28;
-    add(new THREE.SphereGeometry(.22,24,18),whiteSoft,[side*1.15,1.05,-.18],[1.0,.88,1.02]);
+    const arm=add(new THREE.CapsuleGeometry(.19,.62,12,24),blue,[side*.87,1.44,-.01],[1,1,.92]);
+    arm.rotation.z=side*.43;
+    add(new THREE.SphereGeometry(.205,28,20),white,[side*1.15,1.08,-.07],[1.05,.92,1.05]);
   }
 
-  // big soft legs
+  // White belly and raised pocket
+  add(new THREE.SphereGeometry(1,40,26),white,[0,1.22,-.70],[.68,.72,.16]);
+  add(new THREE.SphereGeometry(1,40,26),white,[0,1.18,-.84],[.50,.38,.07]);
+
+  // Short rounded legs and feet
   for(const side of [-1,1]){
-    add(new THREE.CapsuleGeometry(.25,.62,8,16),blueDark,[side*.42,.72,.02],[1.0,1.0,.95]);
-    add(new THREE.SphereGeometry(.48,32,20),whiteSoft,[side*.48,.34,-.28],[1.10,.52,1.20]);
+    add(new THREE.CapsuleGeometry(.22,.48,12,24),blue,[side*.38,.72,0],[1,1,.92]);
+    add(new THREE.SphereGeometry(.44,32,22),white,[side*.43,.34,-.25],[1.05,.50,1.18]);
   }
 
-  // belly panel / pocket
-  add(new THREE.SphereGeometry(1,40,26),whiteSoft,[0,1.28,-.67],[.69,.62,.13]);
-  add(new THREE.TorusGeometry(.46,.018,8,40),blueDark,[0,1.25,-.81],[1,.86,.7]);
-
-  // small tail
-  add(new THREE.SphereGeometry(.17,24,18),red,[0,1.02,.73],[1,1,.8]);
-
-  // grounding shadow
-  const shadow=new THREE.Mesh(
-    new THREE.CircleGeometry(1.15,40),
-    new THREE.MeshBasicMaterial({color:0x30363b,transparent:true,opacity:.22})
-  );
-  shadow.rotation.x=-Math.PI/2;
-  shadow.position.y=.015;
-  shadow.scale.set(1,.55,1);
-  root.add(shadow);
+  // Small red tail
+  add(new THREE.SphereGeometry(.16,24,18),red,[0,1.00,.78],[1,1,.82]);
 
   return root;
 }
