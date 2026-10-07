@@ -8,12 +8,12 @@
 #hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:#ffffff88;font-size:11px;z-index:4;white-space:nowrap}
 #uploadVideo{position:fixed;right:12px;top:54px;z-index:6;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;padding:7px 11px}
 #videoInput{display:none}
-#videoBadge{position:fixed;left:12px;bottom:18px;z-index:6;padding:6px 9px;border:1px solid #ffffff22;border-radius:8px;background:#30343a9c;color:#fff;font-size:11px;display:none}
+#reconStatus{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:8;padding:7px 10px;border-radius:8px;background:#30343ad9;color:#fff;font-size:11px;display:none}#videoBadge{position:fixed;left:12px;bottom:18px;z-index:6;padding:6px 9px;border:1px solid #ffffff22;border-radius:8px;background:#30343a9c;color:#fff;font-size:11px;display:none}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
-<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><button id="uploadVideo">Upload Video</button><input id="videoInput" type="file" accept="video/*"><div id="videoBadge">Video model preview active</div><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
+<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><button id="uploadVideo">Upload Video</button><input id="videoInput" type="file" accept="video/*"><div id="videoBadge">Video model preview active</div><div id="reconStatus"></div><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
-import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
+import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";import{GLTFLoader}from"three/addons/loaders/GLTFLoader.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;app.appendChild(renderer.domElement);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,1000);const HOME=new THREE.Vector3(6.6,4.35,-8.6),TARGET=new THREE.Vector3(0,1.75,-.15);camera.position.copy(HOME);
@@ -173,8 +173,104 @@ videoFloor.scale.set(1,.55,1);
 videoGroup.add(videoFloor);
 
 let videoUrl=null;
+const reconStatus=document.getElementById("reconStatus");
+const gltfLoader=new GLTFLoader();
+let generatedModel=null;
+let reconBusy=false;
 
-function clearVideoModel(){
+function setReconStatus(textValue,show=true){
+  reconStatus.textContent=textValue;
+  reconStatus.style.display=show?"block":"none";
+}
+function removeGeneratedModel(){
+  if(!generatedModel)return;
+  scene.remove(generatedModel);
+  generatedModel.traverse(o=>{
+    if(o.geometry)o.geometry.dispose();
+    if(o.material){
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      mats.forEach(m=>m.dispose&&m.dispose());
+    }
+  });
+  generatedModel=null;
+}
+async function extractVideoFrames(video){
+  const canvas=document.createElement("canvas");
+  const max=768;
+  const scale=Math.min(1,max/video.videoWidth);
+  canvas.width=Math.max(256,Math.round(video.videoWidth*scale));
+  canvas.height=Math.max(256,Math.round(video.videoHeight*scale));
+  const ctx=canvas.getContext("2d",{willReadFrequently:false});
+  const duration=Math.max(.1,video.duration);
+  const times=[duration*.12,duration*.37,duration*.62,duration*.87];
+  const frames=[];
+  for(const t of times){
+    await new Promise((resolve,reject)=>{
+      const done=()=>{video.removeEventListener("seeked",done);resolve()};
+      const fail=()=>{video.removeEventListener("error",fail);reject(new Error("Could not seek video."))};
+      video.addEventListener("seeked",done,{once:true});
+      video.addEventListener("error",fail,{once:true});
+      video.currentTime=t;
+    });
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    frames.push(canvas.toDataURL("image/jpeg",.88));
+  }
+  return frames;
+}
+async function reconstructUploadedVideo(){
+  if(reconBusy)return;
+  reconBusy=true;
+  try{
+    setReconStatus("Extracting 4 views from video…");
+    const frames=await extractVideoFrames(modelVideo);
+    setReconStatus("Sending views for 3D reconstruction…");
+    const create=await fetch("/api/reconstruct",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({frames})
+    });
+    const cj=await create.json();
+    if(!create.ok)throw new Error(cj.error||"Reconstruction service unavailable.");
+    const taskId=cj.taskId;
+    let lastProgress=-1;
+    for(let i=0;i<90;i++){
+      await new Promise(r=>setTimeout(r,2500));
+      const sr=await fetch("/api/reconstruct-status?taskId="+encodeURIComponent(taskId));
+      const sj=await sr.json();
+      if(!sr.ok)throw new Error(sj.error||"Could not read reconstruction status.");
+      const p=sj.task?.progress;
+      if(typeof p==="number"&&p!==lastProgress){
+        lastProgress=p;
+        setReconStatus("Building 3D model… "+p+"%");
+      }
+      if(sj.status==="success"){
+        if(!sj.modelUrl)throw new Error("3D task finished but returned no GLB model URL.");
+        setReconStatus("Loading 3D model…");
+        removeGeneratedModel();
+        const gltf=await gltfLoader.loadAsync(sj.modelUrl);
+        generatedModel=gltf.scene;
+        generatedModel.position.set(0,0,0);
+        generatedModel.scale.setScalar(2.15);
+        generatedModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+        scene.add(generatedModel);
+        companion.visible=false;
+        videoGroup.visible=false;
+        setReconStatus("3D model ready ✓",true);
+        setTimeout(()=>setReconStatus("",false),2200);
+        return;
+      }
+      if(["failed","cancelled","banned"].includes(sj.status))throw new Error(sj.task?.error_message||"3D reconstruction failed.");
+    }
+    throw new Error("3D reconstruction timed out.");
+  }catch(e){
+    setReconStatus("3D reconstruction: "+e.message,true);
+    console.error(e);
+  }finally{
+    reconBusy=false;
+  }
+}
+
+function clearVideoModel(){\n  removeGeneratedModel();
   if(videoUrl)URL.revokeObjectURL(videoUrl);
   videoUrl=null;
   videoGroup.visible=false;
@@ -219,7 +315,7 @@ videoInput.addEventListener("change",async()=>{
     companion.visible=false;
     videoBadge.textContent="Video model preview active";
     videoBadge.style.display="block";
-    try{await modelVideo.play()}catch(e){}
+    try{await modelVideo.play()}catch(e){}\n    reconstructUploadedVideo();
   };
 });
 
