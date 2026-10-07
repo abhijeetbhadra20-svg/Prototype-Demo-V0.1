@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Companion Prototype</title>
+    <title>3D AI Companion Tutor</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0f172a; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #0f172a; font-family: sans-serif; }
         canvas { display: block; }
     </style>
 </head>
@@ -22,52 +22,41 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 2);
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
 
-        camera.position.set(0, 1, 4);
+        camera.position.set(0, 1, 3.5);
 
-        let mixer, character, animations = {};
+        let character;
 
-        // Local robot.glb file load kar rahe hain
+        // Public Doraemon 3D Model URL
         const loader = new THREE.GLTFLoader();
-        loader.load('./robot.glb', (gltf) => {
+        loader.load('https://raw.githubusercontent.com/PatelPratham/Doraemon-3D-Model/main/doraemon.glb', (gltf) => {
             character = gltf.scene;
-            
-            character.scale.set(0.7, 0.7, 0.7);
+            character.scale.set(0.5, 0.5, 0.5);
             character.position.set(0, -1, 0);
             scene.add(character);
-
-            // Agar model me built-in animation hai toh play karega
-            if (gltf.animations && gltf.animations.length) {
-                mixer = new THREE.AnimationMixer(character);
-                gltf.animations.forEach((clip) => {
-                    animations[clip.name] = mixer.clipAction(clip);
-                });
-                const firstAnim = Object.keys(animations)[0];
-                if (firstAnim) animations[firstAnim].play();
-            }
+        }, undefined, (err) => {
+            console.error("Model Loading Error:", err);
         });
 
-        // Touch Reaction (Touch par fast spin / Gudgudi effect)
-        let isTouching = false;
-        window.addEventListener('pointerdown', () => { isTouching = true; });
-        window.addEventListener('pointerup', () => { isTouching = false; });
+        // Touch Interaction
+        let isSpinning = false;
+        window.addEventListener('pointerdown', () => {
+            isSpinning = true;
+            setTimeout(() => { isSpinning = false; }, 800);
+        });
 
-        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            if (mixer) mixer.update(delta);
-            
             if (character) {
-                if (isTouching) {
-                    character.rotation.y += 0.1;
+                if (isSpinning) {
+                    character.rotation.y += 0.15;
                 } else {
                     character.rotation.y += 0.005;
                 }
