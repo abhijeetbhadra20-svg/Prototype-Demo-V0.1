@@ -270,7 +270,8 @@ async function reconstructUploadedVideo(){
   }
 }
 
-function clearVideoModel(){\n  removeGeneratedModel();
+function clearVideoModel(){
+  removeGeneratedModel();
   if(videoUrl)URL.revokeObjectURL(videoUrl);
   videoUrl=null;
   videoGroup.visible=false;
@@ -315,7 +316,8 @@ videoInput.addEventListener("change",async()=>{
     companion.visible=false;
     videoBadge.textContent="Video model preview active";
     videoBadge.style.display="block";
-    try{await modelVideo.play()}catch(e){}\n    reconstructUploadedVideo();
+    try{await modelVideo.play()}catch(e){}
+    reconstructUploadedVideo();
   };
 });
 
