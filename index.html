@@ -6,9 +6,12 @@
 #reset{position:fixed;right:12px;top:12px;z-index:6;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;padding:7px 11px}
 #joy{position:fixed;left:18px;bottom:18px;width:108px;height:108px;border:1px solid #ffffff30;border-radius:50%;background:#ffffff12;z-index:7}.stick{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:#ffffff35;border:1px solid #ffffff35}
 #hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:#ffffff88;font-size:11px;z-index:4;white-space:nowrap}
+#uploadVideo{position:fixed;right:12px;top:54px;z-index:6;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;padding:7px 11px}
+#videoInput{display:none}
+#videoBadge{position:fixed;left:12px;bottom:18px;z-index:6;padding:6px 9px;border:1px solid #ffffff22;border-radius:8px;background:#30343a9c;color:#fff;font-size:11px;display:none}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
-<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
+<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><button id="uploadVideo">Upload Video</button><input id="videoInput" type="file" accept="video/*"><div id="videoBadge">Video model preview active</div><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
@@ -123,7 +126,107 @@ function makeCompanion(){
 
   return root;
 }
+
 const companion=makeCompanion();
 scene.add(companion);
+
+// --- VIDEO MODEL PREVIEW ---
+const videoInput=document.getElementById("videoInput");
+const uploadVideo=document.getElementById("uploadVideo");
+const videoBadge=document.getElementById("videoBadge");
+
+const modelVideo=document.createElement("video");
+modelVideo.muted=true;
+modelVideo.loop=true;
+modelVideo.playsInline=true;
+modelVideo.preload="metadata";
+modelVideo.style.display="none";
+document.body.appendChild(modelVideo);
+
+const videoGroup=new THREE.Group();
+videoGroup.visible=false;
+videoGroup.position.set(0,1.95,-.35);
+scene.add(videoGroup);
+
+const videoFrame=new THREE.Mesh(
+  new THREE.BoxGeometry(3.3,4.7,.12),
+  new THREE.MeshStandardMaterial({color:0x24282c,roughness:.62,metalness:.12})
+);
+videoFrame.castShadow=true;
+videoFrame.receiveShadow=true;
+videoGroup.add(videoFrame);
+
+const videoSurface=new THREE.Mesh(
+  new THREE.PlaneGeometry(3.0,4.4),
+  new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide})
+);
+videoSurface.position.z=.071;
+videoGroup.add(videoSurface);
+
+const videoFloor=new THREE.Mesh(
+  new THREE.CircleGeometry(1.25,40),
+  new THREE.MeshBasicMaterial({color:0x30363b,transparent:true,opacity:.20})
+);
+videoFloor.rotation.x=-Math.PI/2;
+videoFloor.position.y=-1.76;
+videoFloor.scale.set(1,.55,1);
+videoGroup.add(videoFloor);
+
+let videoUrl=null;
+
+function clearVideoModel(){
+  if(videoUrl)URL.revokeObjectURL(videoUrl);
+  videoUrl=null;
+  videoGroup.visible=false;
+  videoBadge.style.display="none";
+  if(videoSurface.material.map){
+    videoSurface.material.map.dispose();
+    videoSurface.material.map=null;
+    videoSurface.material.needsUpdate=true;
+  }
+  modelVideo.removeAttribute("src");
+  modelVideo.load();
+}
+
+uploadVideo.onclick=()=>videoInput.click();
+
+videoInput.addEventListener("change",async()=>{
+  const file=videoInput.files&&videoInput.files[0];
+  if(!file)return;
+  clearVideoModel();
+  videoUrl=URL.createObjectURL(file);
+  modelVideo.src=videoUrl;
+
+  modelVideo.onloadedmetadata=async()=>{
+    const aspect=modelVideo.videoWidth/modelVideo.videoHeight||.7;
+    const h=4.4;
+    const w=Math.max(2.45,Math.min(3.9,h*aspect));
+    videoSurface.geometry.dispose();
+    videoSurface.geometry=new THREE.PlaneGeometry(w,h);
+    videoFrame.geometry.dispose();
+    videoFrame.geometry=new THREE.BoxGeometry(w+.28,h+.28,.12);
+    videoGroup.position.set(0,h/2+.05,-.35);
+    videoFloor.position.y=-h/2-.13;
+
+    const tex=new THREE.VideoTexture(modelVideo);
+    tex.colorSpace=THREE.SRGBColorSpace;
+    tex.minFilter=THREE.LinearFilter;
+    tex.magFilter=THREE.LinearFilter;
+    videoSurface.material.map=tex;
+    videoSurface.material.needsUpdate=true;
+
+    videoGroup.visible=true;
+    companion.visible=false;
+    videoBadge.textContent="Video model preview active";
+    videoBadge.style.display="block";
+    try{await modelVideo.play()}catch(e){}
+  };
+});
+
+document.getElementById("reset").addEventListener("dblclick",()=>{
+  companion.visible=true;
+  clearVideoModel();
+  videoInput.value="";
+});
 let companionTime=0; const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);movement(dt);companionTime+=dt;companion.position.y=Math.sin(companionTime*2.0)*.025;companion.rotation.y=Math.sin(companionTime*.7)*.035;controls.update();renderer.render(scene,camera)}loop();
 </script></body></html>
