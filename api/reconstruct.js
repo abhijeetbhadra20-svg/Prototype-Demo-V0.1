@@ -1,37 +1,73 @@
-export default async function handler(req,res){
- if(req.method!=="POST")return res.status(405).json({error:"POST only"});
- const key=process.env.TRIPO_API_KEY;
- if(!key)return res.status(503).json({error:"TRIPO_API_KEY is not configured on the server yet."});
- try{
-  const {frames}=req.body||{};
-  if(!Array.isArray(frames)||frames.length!==4)return res.status(400).json({error:"Exactly 4 extracted video frames are required."});
-  const tokens=[];
-  for(let i=0;i<4;i++){
-   const m=/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i.exec(frames[i]||"");
-   if(!m)return res.status(400).json({error:"Invalid frame image."});
-   const ext=m[1].toLowerCase()==="jpg"?"jpeg":m[1].toLowerCase();
-   const bytes=Buffer.from(m[2],"base64");
-   const form=new FormData();
-   form.append("file",new Blob([bytes],{type:"image/"+ext}),"view-"+i+"."+ext);
-   const up=await fetch("https://openapi.tripo3d.ai/v3/files",{method:"POST",headers:{Authorization:"Bearer "+key},body:form});
-   const uj=await up.json();
-   if(!up.ok||uj?.code!==0)return res.status(502).json({error:"Tripo image upload failed.",detail:uj});
-   const token=uj?.data?.file_token;
-   if(!token)return res.status(502).json({error:"Tripo did not return a file token.",detail:uj});
-   tokens.push(token);
-  }
-  const task=await fetch("https://openapi.tripo3d.ai/v3/generation/multiview-to-model",{
-   method:"POST",
-   headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},
-   body:JSON.stringify({
-    inputs:[{front:tokens[0]},{left:tokens[1]},{back:tokens[2]},{right:tokens[3]}],
-    model:"v3.1-20260211",
-    texture:true,pbr:true,texture_quality:"detailed",geometry_quality:"detailed",
-    face_limit:500000,orientation:"align_image"
-   })
+const HF_SPACE = "https://vpyr-pixal3d-multiview-glb.hf.space";
+
+function authHeaders(){
+  const token=process.env.HF_TOKEN;
+  return token ? {Authorization:"Bearer "+token} : {};
+}
+
+async function parseJsonSafe(r){
+  const text=await r.text();
+  try{return JSON.parse(text)}catch{return {raw:text}}
+}
+
+async function uploadFrame(dataUrl,index){
+  const m=/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i.exec(dataUrl||"");
+  if(!m)throw new Error("Invalid extracted frame image.");
+  const ext=m[1].toLowerCase()==="jpg"?"jpeg":m[1].toLowerCase();
+  const bytes=Buffer.from(m[2],"base64");
+  const form=new FormData();
+  form.append("files",new Blob([bytes],{type:"image/"+ext}),"turntable-"+index+"."+ext);
+
+  const r=await fetch(HF_SPACE+"/gradio_api/upload",{
+    method:"POST",
+    headers:authHeaders(),
+    body:form
   });
-  const tj=await task.json();
-  if(!task.ok||tj?.code!==0)return res.status(502).json({error:"Tripo reconstruction task failed.",detail:tj});
-  return res.status(200).json({taskId:tj.data.task_id});
- }catch(e){return res.status(500).json({error:"Reconstruction server error.",detail:String(e)});}
+  const j=await parseJsonSafe(r);
+  if(!r.ok)throw new Error("Hugging Face upload failed ("+r.status+"). "+(j?.error||j?.message||""));
+  const path=Array.isArray(j)?j[0]:j?.path;
+  if(!path)throw new Error("Hugging Face upload returned no file path.");
+  return {path,orig_name:"turntable-"+index+"."+ext,mime_type:"image/"+ext,meta:{_type:"gradio.FileData"}};
+}
+
+export default async function handler(req,res){
+  if(req.method!=="POST")return res.status(405).json({error:"POST only"});
+  try{
+    const {frames}=req.body||{};
+    if(!Array.isArray(frames)||frames.length!==4)return res.status(400).json({error:"Exactly 4 extracted video frames are required."});
+
+    // The uploaded turntable is ordered front -> 90° -> 180° -> 270°.
+    const [front,azim090,back,azim270]=await Promise.all(frames.map((f,i)=>uploadFrame(f,i)));
+
+    const body={
+      data:[
+        front,azim090,back,azim270,
+        42,                 // seed
+        20,                 // horizontal FOV
+        3.1192049980163574, // camera radius used by the Space's reference rig
+        1,                  // mesh scale
+        1024,               // cascade resolution
+        true                // textured GLB
+      ]
+    };
+
+    const call=await fetch(HF_SPACE+"/gradio_api/call/generate_glb",{
+      method:"POST",
+      headers:{"Content-Type":"application/json",...authHeaders()},
+      body:JSON.stringify(body)
+    });
+    const cj=await parseJsonSafe(call);
+    if(!call.ok||!cj?.event_id){
+      return res.status(502).json({
+        error:"Free 3D reconstruction service could not start.",
+        provider:"Hugging Face / Pixal3D",
+        detail:cj
+      });
+    }
+
+    return res.status(200).json({taskId:cj.event_id,provider:"pixal3d"});
+  }catch(e){
+    console.error("Pixal3D reconstruct error:",e);
+    return res.status(500).json({error:"Reconstruction server error.",detail:String(e)});
+  }
 }
