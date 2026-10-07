@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D AI Companion - Phase 3</title>
+    <title>3D Companion Prototype</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0f172a; touch-action: none; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-    <!-- Three.js & GLTF 3D Loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
@@ -23,55 +22,56 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting (Taaki 3D model properly dikhe)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
 
-        camera.position.set(0, 1.2, 3.2);
+        camera.position.set(0, 1, 4);
 
         let mixer, character, animations = {};
 
-        // 3D Robot Model Load karna (Official Three.js CDN Model)
+        // Local robot.glb file load kar rahe hain
         const loader = new THREE.GLTFLoader();
-        loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
+        loader.load('./robot.glb', (gltf) => {
             character = gltf.scene;
-            character.position.y = -1; // Center position
+            
+            character.scale.set(0.7, 0.7, 0.7);
+            character.position.set(0, -1, 0);
             scene.add(character);
 
-            mixer = new THREE.AnimationMixer(character);
-            gltf.animations.forEach((clip) => {
-                animations[clip.name] = mixer.clipAction(clip);
-            });
-
-            // Default Idle Animation
-            if (animations['Idle']) {
-                animations['Idle'].play();
+            // Agar model me built-in animation hai toh play karega
+            if (gltf.animations && gltf.animations.length) {
+                mixer = new THREE.AnimationMixer(character);
+                gltf.animations.forEach((clip) => {
+                    animations[clip.name] = mixer.clipAction(clip);
+                });
+                const firstAnim = Object.keys(animations)[0];
+                if (firstAnim) animations[firstAnim].play();
             }
         });
 
-        // Touch Event (Tap karne par Robot Jump karega)
-        window.addEventListener('pointerdown', () => {
-            if (mixer && animations['Jump']) {
-                if (animations['Idle']) animations['Idle'].stop();
-                
-                animations['Jump'].reset().play();
-
-                setTimeout(() => {
-                    animations['Jump'].stop();
-                    if (animations['Idle']) animations['Idle'].play();
-                }, 1000);
-            }
-        });
+        // Touch Reaction (Touch par fast spin / Gudgudi effect)
+        let isTouching = false;
+        window.addEventListener('pointerdown', () => { isTouching = true; });
+        window.addEventListener('pointerup', () => { isTouching = false; });
 
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             if (mixer) mixer.update(delta);
+            
+            if (character) {
+                if (isTouching) {
+                    character.rotation.y += 0.1;
+                } else {
+                    character.rotation.y += 0.005;
+                }
+            }
             renderer.render(scene, camera);
         }
         animate();
