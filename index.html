@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Gadget AI — Full 3D Space V0.5</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Gadget AI — Character Prototype V0.6</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#85898d;font-family:system-ui,sans-serif;touch-action:none}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #top{position:fixed;top:12px;left:12px;z-index:5;padding:7px 10px;border:1px solid #ffffff2b;border-radius:9px;background:#30343ab8;color:#fff;font-size:12px;backdrop-filter:blur(7px)}
@@ -8,7 +8,7 @@
 #hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);color:#ffffff88;font-size:11px;z-index:4;white-space:nowrap}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
-<body><div id="app"></div><div id="top">GADGET AI · FULL 3D SPACE V0.5</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
+<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.6</div><button id="reset">Reset</button><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
@@ -33,85 +33,93 @@ addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 /* --- PROCEDURAL COMPANION --- */
 function makeCompanion(){
   const root=new THREE.Group();
-  root.position.set(0,0,0);
-  root.name="DoraemonPrototype";
+  root.name="CompanionPrototype";
 
-  const blue=new THREE.MeshStandardMaterial({color:0x168dcc,roughness:.72,metalness:.03});
-  const blueDark=new THREE.MeshStandardMaterial({color:0x0874ad,roughness:.8});
-  const white=new THREE.MeshStandardMaterial({color:0xf5f5f2,roughness:.65});
-  const black=new THREE.MeshStandardMaterial({color:0x101215,roughness:.45});
-  const red=new THREE.MeshStandardMaterial({color:0xd92828,roughness:.55});
-  const yellow=new THREE.MeshStandardMaterial({color:0xf2c328,roughness:.48,metalness:.08});
+  const blue=new THREE.MeshStandardMaterial({color:0x1599d0,roughness:.68,metalness:.02});
+  const blueDark=new THREE.MeshStandardMaterial({color:0x0b72ab,roughness:.78});
+  const white=new THREE.MeshStandardMaterial({color:0xf4f1e9,roughness:.62});
+  const whiteSoft=new THREE.MeshStandardMaterial({color:0xfffbf2,roughness:.7});
+  const black=new THREE.MeshStandardMaterial({color:0x111318,roughness:.38});
+  const red=new THREE.MeshStandardMaterial({color:0xe52f2f,roughness:.52});
+  const yellow=new THREE.MeshStandardMaterial({color:0xf2c536,roughness:.5,metalness:.05});
 
   const add=(geo,mat,pos,scale=[1,1,1])=>{
-    const m=new THREE.Mesh(geo,mat);m.position.set(...pos);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;root.add(m);return m;
+    const m=new THREE.Mesh(geo,mat);
+    m.position.set(...pos);
+    m.scale.set(...scale);
+    m.castShadow=true;
+    m.receiveShadow=true;
+    root.add(m);
+    return m;
   };
 
-  // body
-  add(new THREE.SphereGeometry(1,32,20),blue,[0,1.38,0],[.9,1.05,.72]);
+  // torso: compact rounded robot body
+  add(new THREE.SphereGeometry(1,40,28),blue,[0,1.42,0],[.98,1.08,.78]);
 
-  // head
-  const head=add(new THREE.SphereGeometry(1,40,28),blue,[0,2.65,0],[1.16,1.12,.92]);
+  // head: intentionally oversized and rounded
+  add(new THREE.SphereGeometry(1,48,32),blue,[0,2.72,0],[1.22,1.16,.98]);
 
-  // white face / muzzle
-  add(new THREE.SphereGeometry(1,40,24),white,[0,2.53,-.79],[.91,.78,.20]);
+  // large cream face area
+  add(new THREE.SphereGeometry(1,48,28),whiteSoft,[0,2.58,-.83],[.98,.82,.23]);
 
   // eyes
-  for(const x of [-.29,.29]){
-    add(new THREE.SphereGeometry(.23,24,16),white,[x,2.96,-.83],[1,.98,.42]);
-    add(new THREE.SphereGeometry(.075,18,12),black,[x,2.96,-1.02],[1,1,.55]);
+  for(const x of [-.34,.34]){
+    add(new THREE.SphereGeometry(1,32,24),whiteSoft,[x,3.00,-1.02],[.29,.39,.14]);
+    add(new THREE.SphereGeometry(.12,24,18),black,[x,2.99,-1.145],[.78,1,.45]);
+    add(new THREE.SphereGeometry(.038,16,12),whiteSoft,[x-.018,3.025,-1.18],[.8,1,.35]);
   }
 
-  // nose
-  add(new THREE.SphereGeometry(.105,20,16),red,[0,2.70,-1.01],[1,1,.65]);
+  // nose + short bridge
+  add(new THREE.SphereGeometry(.14,24,18),red,[0,2.67,-1.18],[1,.96,.7]);
+  add(new THREE.CylinderGeometry(.018,.018,.25,8),black,[0,2.48,-1.085],[1,1,.7]);
 
-  // mouth
-  const mouth=new THREE.Mesh(
-    new THREE.TorusGeometry(.30,.025,8,32,Math.PI),
-    black
-  );
-  mouth.position.set(0,2.37,-1.00);mouth.rotation.z=Math.PI;root.add(mouth);
+  // smiling open mouth
+  add(new THREE.SphereGeometry(1,36,24),black,[0,2.15,-.99],[.52,.43,.12]);
+  add(new THREE.SphereGeometry(1,32,20),red,[0,2.05,-1.065],[.34,.16,.055]);
+  add(new THREE.TorusGeometry(.41,.035,10,40,Math.PI),black,[0,2.20,-1.12],[1,.82,.8]);
 
-  // neck collar
-  add(new THREE.TorusGeometry(.69,.075,12,48),red,[0,1.95,0],[1,1,.72]);
-
-  // bell
-  add(new THREE.SphereGeometry(.15,24,16),yellow,[0,1.82,-.69],[1,1,.72]);
-  add(new THREE.TorusGeometry(.07,.025,8,24),yellow,[0,1.76,-.79],[1,1,.8]);
-
-  // arms
-  for(const side of [-1,1]){
-    const arm=add(new THREE.SphereGeometry(.38,24,18),blue,[side*.82,1.50,0],[.46,.82,.48]);
-    arm.rotation.z=side*.35;
-    add(new THREE.SphereGeometry(.20,22,16),white,[side*1.03,1.03,-.02],[.85,.72,.85]);
-  }
-
-  // legs + feet
-  for(const side of [-1,1]){
-    add(new THREE.SphereGeometry(.38,24,18),blue,[side*.39,.72,0],[.52,.72,.55]);
-    add(new THREE.SphereGeometry(.48,28,18),white,[side*.45,.38,-.23],[1.0,.58,1.15]);
-  }
-
-  // red tail
-  add(new THREE.SphereGeometry(.16,20,14),red,[0,1.10,.70],[1,1,.75]);
-
-  // whiskers as thin cylinders
-  const whisker=(y,side)=>{
-    const len=.55;
-    const g=new THREE.CylinderGeometry(.012,.012,len,8);
-    const w=new THREE.Mesh(g,black);
-    w.position.set(side*.42,y,-1.00);
-    w.rotation.z=Math.PI/2 + side*(y>2.52?.08:-.08);
-    root.add(w);
+  // whiskers
+  const whisker=(side,y,tilt)=>{
+    const w=add(new THREE.CylinderGeometry(.012,.012,.62,8),black,[side*.58,y,-1.01]);
+    w.rotation.z=Math.PI/2 + side*tilt;
   };
-  [-.13,0,.13].forEach((dy,i)=>{whisker(2.53+dy,-1);whisker(2.53+dy,1)});
+  whisker(-1,2.47,.08); whisker(-1,2.56,0); whisker(-1,2.65,-.08);
+  whisker(1,2.47,-.08); whisker(1,2.56,0); whisker(1,2.65,.08);
 
-  // subtle grounding shadow
+  // collar + bell
+  add(new THREE.TorusGeometry(.76,.085,14,56),red,[0,1.98,0],[1,1,.77]);
+  add(new THREE.SphereGeometry(.17,24,18),yellow,[0,1.83,-.72],[1,1,.75]);
+  add(new THREE.TorusGeometry(.07,.023,8,24),black,[0,1.78,-.835],[1,1,.7]);
+
+  // large rounded arms
+  for(const side of [-1,1]){
+    const arm=add(new THREE.CapsuleGeometry(.22,.72,8,16),blue,[side*.88,1.42,-.01],[1,.98,.9]);
+    arm.rotation.z=side*.28;
+    add(new THREE.SphereGeometry(.22,24,18),whiteSoft,[side*1.15,1.05,-.18],[1.0,.88,1.02]);
+  }
+
+  // big soft legs
+  for(const side of [-1,1]){
+    add(new THREE.CapsuleGeometry(.25,.62,8,16),blueDark,[side*.42,.72,.02],[1.0,1.0,.95]);
+    add(new THREE.SphereGeometry(.48,32,20),whiteSoft,[side*.48,.34,-.28],[1.10,.52,1.20]);
+  }
+
+  // belly panel / pocket
+  add(new THREE.SphereGeometry(1,40,26),whiteSoft,[0,1.28,-.67],[.69,.62,.13]);
+  add(new THREE.TorusGeometry(.46,.018,8,40),blueDark,[0,1.25,-.81],[1,.86,.7]);
+
+  // small tail
+  add(new THREE.SphereGeometry(.17,24,18),red,[0,1.02,.73],[1,1,.8]);
+
+  // grounding shadow
   const shadow=new THREE.Mesh(
-    new THREE.CircleGeometry(1.05,32),
-    new THREE.MeshBasicMaterial({color:0x3b4045,transparent:true,opacity:.20})
+    new THREE.CircleGeometry(1.15,40),
+    new THREE.MeshBasicMaterial({color:0x30363b,transparent:true,opacity:.22})
   );
-  shadow.rotation.x=-Math.PI/2;shadow.position.y=.015;shadow.scale.set(1,.58,1);root.add(shadow);
+  shadow.rotation.x=-Math.PI/2;
+  shadow.position.y=.015;
+  shadow.scale.set(1,.55,1);
+  root.add(shadow);
 
   return root;
 }
