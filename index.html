@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D AI Prototype Phase 1</title>
+    <title>3D AI Prototype Phase 2</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0f172a; }
+        body { margin: 0; overflow: hidden; background-color: #0f172a; touch-action: none; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-    <!-- Three.js Library CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // 1. Scene, Camera, Renderer Setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -21,7 +19,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 2. 3D Object (Cube) & Material
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
         const material = new THREE.MeshNormalMaterial();
         const cube = new THREE.Mesh(geometry, material);
@@ -29,16 +26,34 @@
 
         camera.position.z = 4;
 
-        // 3. Animation Loop
+        let isReacting = false;
+        let reactionTimer = 0;
+
+        // Touch/Click Event (Gudgudi/Reaction Logic)
+        window.addEventListener('pointerdown', () => {
+            isReacting = true;
+            reactionTimer = 25; // 25 frames tak fast spin & bounce hoga
+        });
+
         function animate() {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+
+            if (isReacting && reactionTimer > 0) {
+                cube.rotation.x += 0.2; // Fast spin on touch
+                cube.rotation.y += 0.2;
+                cube.scale.set(1.3, 1.3, 1.3); // Bounce effect
+                reactionTimer--;
+            } else {
+                isReacting = false;
+                cube.rotation.x += 0.01; // Normal speed
+                cube.rotation.y += 0.01;
+                cube.scale.set(1, 1, 1);
+            }
+
             renderer.render(scene, camera);
         }
         animate();
 
-        // Screen Resize Handling for Mobile
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
