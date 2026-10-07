@@ -24,8 +24,6 @@ async function uploadFrame(dataUrl,index){
   if(!r.ok)throw new Error("Hugging Face upload failed ("+r.status+"): "+JSON.stringify(j));
   const path=Array.isArray(j)?j[0]:j?.path;
   if(!path)throw new Error("Hugging Face upload returned no file path: "+JSON.stringify(j));
-  // The Space's gr.Image inputs are type="filepath", so generate_glb expects
-  // the uploaded server-side path string, not a FileData object.
   return path;
 }
 export default async function handler(req,res){
@@ -36,17 +34,16 @@ export default async function handler(req,res){
     const files=await Promise.all(frames.map(uploadFrame));
 
     // Current Pixal3D Space contract: 4 filepath inputs + seed + FOV + radius
-    // + mesh scale + resolution. The Space's current generate_glb endpoint has
-    // exactly 9 inputs; sending the old 10th texture flag causes a server-side
-    // Gradio 500/Internal Server Error.
+    // + mesh scale + resolution + texture toggle.
     const payload={
       data:[
         files[0],files[1],files[2],files[3],
-        42,     // seed
-        20,     // FOV degrees
-        3.1192, // camera radius
-        1,      // mesh scale
-        1024    // resolution
+        42,
+        20,
+        3.1192,
+        1,
+        1024,
+        false
       ]
     };
     const call=await fetch(HF_SPACE+"/gradio_api/call/generate_glb",{
