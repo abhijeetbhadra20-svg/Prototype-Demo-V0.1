@@ -24,14 +24,9 @@ async function uploadFrame(dataUrl,index){
   if(!r.ok)throw new Error("Hugging Face upload failed ("+r.status+"): "+JSON.stringify(j));
   const path=Array.isArray(j)?j[0]:j?.path;
   if(!path)throw new Error("Hugging Face upload returned no file path: "+JSON.stringify(j));
-  return {
-    path,
-    url:HF_SPACE+"/gradio_api/file="+encodeURIComponent(path),
-    size:bytes.length,
-    orig_name:filename,
-    mime_type:"image/"+ext,
-    meta:{_type:"gradio.FileData"}
-  };
+  // The Space's gr.Image inputs are type="filepath", so generate_glb expects
+  // the uploaded server-side path string, not a FileData object.
+  return path;
 }
 export default async function handler(req,res){
   if(req.method!=="POST")return res.status(405).json({error:"POST only"});
