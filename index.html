@@ -183,7 +183,15 @@ async function extractTurntableViews(video){
   canvas.height=Math.max(256,Math.round(video.videoHeight*scale));
   const ctx=canvas.getContext("2d");
   const duration=Math.max(.2,video.duration);
-  const times=[duration*.08,duration*.33,duration*.58,duration*.83];
+  // The Pixal3D Space is a fixed 0° / 90° / 180° / 270° camera rig.
+  // This turntable completes one rotation, so sample the four quarter-turns
+  // instead of 8/33/58/83%, which introduces ~29° of pose error.
+  const times=[
+    Math.min(duration*.01,duration-.05),
+    duration*.25,
+    duration*.50,
+    duration*.75
+  ];
   const frames=[];
   for(const t of times){
     await new Promise((resolve,reject)=>{
@@ -217,7 +225,13 @@ async function reconstructTurntable(){
       body:JSON.stringify({frames})
     });
     const cj=await create.json();
-    if(!create.ok){ const d=cj.detail; const extra=d ? (" | code="+(d.code??"unknown")+" | message="+(d.message||"")+(d.suggestion?" | suggestion="+d.suggestion:"")) : ""; throw new Error((cj.error||cj.message||"Reconstruction service unavailable.")+extra); }
+    if(!create.ok){
+      const d=cj.detail;
+      const extra=d
+        ? (" | provider detail="+(typeof d==="string"?d:JSON.stringify(d)))
+        : "";
+      throw new Error((cj.error||cj.message||"Reconstruction service unavailable.")+extra);
+    }
     const taskId=cj.taskId;
     setReconStatus("AI is building the 3D model…");
     for(let i=0;i<120;i++){
