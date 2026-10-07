@@ -11,7 +11,7 @@
 #reconStatus{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:8;padding:7px 10px;border-radius:8px;background:#30343ad9;color:#fff;font-size:11px;display:none}#videoBadge{position:fixed;left:12px;bottom:18px;z-index:6;padding:6px 9px;border:1px solid #ffffff22;border-radius:8px;background:#30343a9c;color:#fff;font-size:11px;display:none}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script></head>
-<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><button id="uploadVideo">Upload Video</button><input id="videoInput" type="file" accept="video/*"><div id="videoBadge">Video model preview active</div><div id="reconStatus"></div><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
+<body><div id="app"></div><div id="top">GADGET AI · CHARACTER PROTOTYPE V0.7</div><button id="reset">Reset</button><button id="uploadVideo">Upload Turntable Video</button><input id="videoInput" type="file" accept="video/*"><div id="videoBadge"></div><div id="reconStatus"></div><div id="joy"><div class="stick"></div></div><div id="hint">Drag to look · pinch / wheel to zoom · joystick / WASD to move</div>
 <script type="module">
 import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";import{GLTFLoader}from"three/addons/loaders/GLTFLoader.js";
 const app=document.getElementById("app"),scene=new THREE.Scene();scene.background=new THREE.Color(0x85898d);
@@ -30,7 +30,7 @@ function moveJoy(x,y){const r=joy.getBoundingClientRect(),dx0=x-(r.left+r.width/
 function up(){pid=null;jx=jy=0;stick.style.transform="translate3d(0,0,0)"}joy.addEventListener("pointerdown",e=>{pid=e.pointerId;joy.setPointerCapture(pid);moveJoy(e.clientX,e.clientY)});joy.addEventListener("pointermove",e=>{if(e.pointerId===pid)moveJoy(e.clientX,e.clientY)});joy.addEventListener("pointerup",up);joy.addEventListener("pointercancel",up);
 const dir=new THREE.Vector3(),fwd=new THREE.Vector3(),right=new THREE.Vector3();
 function movement(dt){let x=jx,z=jy;if(keys.has("w")||keys.has("arrowup"))z--;if(keys.has("s")||keys.has("arrowdown"))z++;if(keys.has("a")||keys.has("arrowleft"))x--;if(keys.has("d")||keys.has("arrowright"))x++;const l=Math.hypot(x,z);if(l<.01)return;x/=l;z/=l;camera.getWorldDirection(fwd);fwd.y=0;fwd.normalize();right.crossVectors(fwd,camera.up).normalize();dir.copy(fwd).multiplyScalar(-z).addScaledVector(right,x).normalize();const d=dt*5.5;camera.position.addScaledVector(dir,d);controls.target.addScaledVector(dir,d)}
-document.getElementById("reset").onclick=()=>{camera.position.copy(HOME);controls.target.copy(TARGET);controls.update()};
+document.getElementById("reset").onclick=()=>{removeGeneratedModel();companion.visible=true;camera.position.copy(HOME);controls.target.copy(TARGET);controls.update();setReconStatus("",false);};
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 
 /* --- PROCEDURAL COMPANION --- */
@@ -130,56 +130,25 @@ function makeCompanion(){
 const companion=makeCompanion();
 scene.add(companion);
 
-// --- VIDEO MODEL PREVIEW ---
+// --- TURNtable VIDEO -> 3D RECONSTRUCTION ---
 const videoInput=document.getElementById("videoInput");
 const uploadVideo=document.getElementById("uploadVideo");
 const videoBadge=document.getElementById("videoBadge");
-
 const modelVideo=document.createElement("video");
 modelVideo.muted=true;
-modelVideo.loop=true;
 modelVideo.playsInline=true;
 modelVideo.preload="metadata";
 modelVideo.style.display="none";
 document.body.appendChild(modelVideo);
 
-const videoGroup=new THREE.Group();
-videoGroup.visible=false;
-videoGroup.position.set(0,1.95,-.35);
-scene.add(videoGroup);
-
-const videoFrame=new THREE.Mesh(
-  new THREE.BoxGeometry(3.3,4.7,.12),
-  new THREE.MeshStandardMaterial({color:0x24282c,roughness:.62,metalness:.12})
-);
-videoFrame.castShadow=true;
-videoFrame.receiveShadow=true;
-videoGroup.add(videoFrame);
-
-const videoSurface=new THREE.Mesh(
-  new THREE.PlaneGeometry(3.0,4.4),
-  new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide})
-);
-videoSurface.position.z=.071;
-videoGroup.add(videoSurface);
-
-const videoFloor=new THREE.Mesh(
-  new THREE.CircleGeometry(1.25,40),
-  new THREE.MeshBasicMaterial({color:0x30363b,transparent:true,opacity:.20})
-);
-videoFloor.rotation.x=-Math.PI/2;
-videoFloor.position.y=-1.76;
-videoFloor.scale.set(1,.55,1);
-videoGroup.add(videoFloor);
-
-let videoUrl=null;
 const reconStatus=document.getElementById("reconStatus");
 const gltfLoader=new GLTFLoader();
+let videoUrl=null;
 let generatedModel=null;
 let reconBusy=false;
 
-function setReconStatus(textValue,show=true){
-  reconStatus.textContent=textValue;
+function setReconStatus(msg,show=true){
+  reconStatus.textContent=msg;
   reconStatus.style.display=show?"block":"none";
 }
 function removeGeneratedModel(){
@@ -189,142 +158,125 @@ function removeGeneratedModel(){
     if(o.geometry)o.geometry.dispose();
     if(o.material){
       const mats=Array.isArray(o.material)?o.material:[o.material];
-      mats.forEach(m=>m.dispose&&m.dispose());
+      mats.forEach(m=>m.dispose?.());
     }
   });
   generatedModel=null;
 }
-async function extractVideoFrames(video){
+function fitGeneratedModel(model){
+  const box=new THREE.Box3().setFromObject(model);
+  const size=box.getSize(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z)||1;
+  model.scale.setScalar(3.2/maxDim);
+  model.updateMatrixWorld(true);
+  const box2=new THREE.Box3().setFromObject(model);
+  const center2=box2.getCenter(new THREE.Vector3());
+  model.position.x-=center2.x;
+  model.position.z-=center2.z;
+  model.position.y-=box2.min.y;
+}
+async function extractTurntableViews(video){
   const canvas=document.createElement("canvas");
-  const max=768;
+  const max=900;
   const scale=Math.min(1,max/video.videoWidth);
   canvas.width=Math.max(256,Math.round(video.videoWidth*scale));
   canvas.height=Math.max(256,Math.round(video.videoHeight*scale));
-  const ctx=canvas.getContext("2d",{willReadFrequently:false});
-  const duration=Math.max(.1,video.duration);
-  const times=[duration*.12,duration*.37,duration*.62,duration*.87];
+  const ctx=canvas.getContext("2d");
+  const duration=Math.max(.2,video.duration);
+  const times=[duration*.08,duration*.33,duration*.58,duration*.83];
   const frames=[];
   for(const t of times){
     await new Promise((resolve,reject)=>{
-      const done=()=>{video.removeEventListener("seeked",done);resolve()};
-      const fail=()=>{video.removeEventListener("error",fail);reject(new Error("Could not seek video."))};
-      video.addEventListener("seeked",done,{once:true});
-      video.addEventListener("error",fail,{once:true});
+      const onSeek=()=>{cleanup();resolve()};
+      const onError=()=>{cleanup();reject(new Error("Could not read turntable frame."))};
+      const cleanup=()=>{
+        video.removeEventListener("seeked",onSeek);
+        video.removeEventListener("error",onError);
+      };
+      video.addEventListener("seeked",onSeek,{once:true});
+      video.addEventListener("error",onError,{once:true});
       video.currentTime=t;
     });
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    frames.push(canvas.toDataURL("image/jpeg",.88));
+    frames.push(canvas.toDataURL("image/jpeg",.9));
   }
   return frames;
 }
-async function reconstructUploadedVideo(){
+async function reconstructTurntable(){
   if(reconBusy)return;
   reconBusy=true;
+  companion.visible=false;
+  removeGeneratedModel();
   try{
-    setReconStatus("Extracting 4 views from video…");
-    const frames=await extractVideoFrames(modelVideo);
-    setReconStatus("Sending views for 3D reconstruction…");
+    setReconStatus("Reading turntable video…");
+    const frames=await extractTurntableViews(modelVideo);
+    setReconStatus("Sending 4 views to 3D reconstruction…");
     const create=await fetch("/api/reconstruct",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({frames})
     });
     const cj=await create.json();
-    if(!create.ok)throw new Error(cj.error||"Reconstruction service unavailable.");
+    if(!create.ok)throw new Error(cj.error||cj.message||"Reconstruction service unavailable.");
     const taskId=cj.taskId;
-    let lastProgress=-1;
-    for(let i=0;i<90;i++){
-      await new Promise(r=>setTimeout(r,2500));
+    setReconStatus("AI is building the 3D model…");
+    for(let i=0;i<120;i++){
+      await new Promise(r=>setTimeout(r,2000));
       const sr=await fetch("/api/reconstruct-status?taskId="+encodeURIComponent(taskId));
       const sj=await sr.json();
-      if(!sr.ok)throw new Error(sj.error||"Could not read reconstruction status.");
-      const p=sj.task?.progress;
-      if(typeof p==="number"&&p!==lastProgress){
-        lastProgress=p;
-        setReconStatus("Building 3D model… "+p+"%");
-      }
+      if(!sr.ok)throw new Error(sj.error||sj.message||"Could not read reconstruction status.");
+      const task=sj.task||{};
+      const p=typeof task.progress==="number"?task.progress:null;
+      setReconStatus(p!==null?"AI is building the 3D model… "+p+"%":"AI is building the 3D model…");
       if(sj.status==="success"){
-        if(!sj.modelUrl)throw new Error("3D task finished but returned no GLB model URL.");
-        setReconStatus("Loading 3D model…");
-        removeGeneratedModel();
+        if(!sj.modelUrl)throw new Error("Reconstruction finished without a GLB model URL.");
+        setReconStatus("Loading generated 3D model…");
         const gltf=await gltfLoader.loadAsync(sj.modelUrl);
         generatedModel=gltf.scene;
-        generatedModel.position.set(0,0,0);
-        generatedModel.scale.setScalar(2.15);
         generatedModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+        fitGeneratedModel(generatedModel);
         scene.add(generatedModel);
-        companion.visible=false;
-        videoGroup.visible=false;
-        setReconStatus("3D model ready ✓",true);
-        setTimeout(()=>setReconStatus("",false),2200);
+        setReconStatus("3D model ready ✓");
+        setTimeout(()=>setReconStatus("",false),2500);
         return;
       }
-      if(["failed","cancelled","banned"].includes(sj.status))throw new Error(sj.task?.error_message||"3D reconstruction failed.");
+      if(["failed","cancelled"].includes(sj.status))throw new Error(task.message||task.error_message||"3D reconstruction failed.");
     }
-    throw new Error("3D reconstruction timed out.");
+    throw new Error("Reconstruction timed out.");
   }catch(e){
-    setReconStatus("3D reconstruction: "+e.message,true);
+    companion.visible=true;
+    setReconStatus("Reconstruction failed: "+e.message,true);
     console.error(e);
   }finally{
     reconBusy=false;
   }
 }
-
-function clearVideoModel(){
-  removeGeneratedModel();
+function clearUploadedVideo(){
   if(videoUrl)URL.revokeObjectURL(videoUrl);
   videoUrl=null;
-  videoGroup.visible=false;
-  videoBadge.style.display="none";
-  if(videoSurface.material.map){
-    videoSurface.material.map.dispose();
-    videoSurface.material.map=null;
-    videoSurface.material.needsUpdate=true;
-  }
   modelVideo.removeAttribute("src");
   modelVideo.load();
+  videoInput.value="";
 }
-
 uploadVideo.onclick=()=>videoInput.click();
-
-videoInput.addEventListener("change",async()=>{
-  const file=videoInput.files&&videoInput.files[0];
+videoInput.addEventListener("change",()=>{
+  const file=videoInput.files?.[0];
   if(!file)return;
-  clearVideoModel();
+  if(!file.type.startsWith("video/")){
+    setReconStatus("Please select a video file.",true);
+    return;
+  }
+  clearUploadedVideo();
   videoUrl=URL.createObjectURL(file);
   modelVideo.src=videoUrl;
-
+  setReconStatus("Video selected. Preparing reconstruction…");
   modelVideo.onloadedmetadata=async()=>{
-    const aspect=modelVideo.videoWidth/modelVideo.videoHeight||.7;
-    const h=4.4;
-    const w=Math.max(2.45,Math.min(3.9,h*aspect));
-    videoSurface.geometry.dispose();
-    videoSurface.geometry=new THREE.PlaneGeometry(w,h);
-    videoFrame.geometry.dispose();
-    videoFrame.geometry=new THREE.BoxGeometry(w+.28,h+.28,.12);
-    videoGroup.position.set(0,h/2+.05,-.35);
-    videoFloor.position.y=-h/2-.13;
-
-    const tex=new THREE.VideoTexture(modelVideo);
-    tex.colorSpace=THREE.SRGBColorSpace;
-    tex.minFilter=THREE.LinearFilter;
-    tex.magFilter=THREE.LinearFilter;
-    videoSurface.material.map=tex;
-    videoSurface.material.needsUpdate=true;
-
-    videoGroup.visible=true;
-    companion.visible=false;
-    videoBadge.textContent="Video model preview active";
-    videoBadge.style.display="block";
-    try{await modelVideo.play()}catch(e){}
-    reconstructUploadedVideo();
+    if(!Number.isFinite(modelVideo.duration)||modelVideo.duration<1){
+      setReconStatus("Video is too short for turntable reconstruction.",true);
+      return;
+    }
+    await reconstructTurntable();
   };
-});
-
-document.getElementById("reset").addEventListener("dblclick",()=>{
-  companion.visible=true;
-  clearVideoModel();
-  videoInput.value="";
 });
 let companionTime=0; const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);movement(dt);companionTime+=dt;companion.position.y=Math.sin(companionTime*2.0)*.025;companion.rotation.y=Math.sin(companionTime*.7)*.035;controls.update();renderer.render(scene,camera)}loop();
 </script></body></html>
