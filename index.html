@@ -29,5 +29,93 @@ const dir=new THREE.Vector3(),fwd=new THREE.Vector3(),right=new THREE.Vector3();
 function movement(dt){let x=jx,z=jy;if(keys.has("w")||keys.has("arrowup"))z--;if(keys.has("s")||keys.has("arrowdown"))z++;if(keys.has("a")||keys.has("arrowleft"))x--;if(keys.has("d")||keys.has("arrowright"))x++;const l=Math.hypot(x,z);if(l<.01)return;x/=l;z/=l;camera.getWorldDirection(fwd);fwd.y=0;fwd.normalize();right.crossVectors(fwd,camera.up).normalize();dir.copy(fwd).multiplyScalar(-z).addScaledVector(right,x).normalize();const d=dt*5.5;camera.position.addScaledVector(dir,d);controls.target.addScaledVector(dir,d)}
 document.getElementById("reset").onclick=()=>{camera.position.copy(HOME);controls.target.copy(TARGET);controls.update()};
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);movement(Math.min(clock.getDelta(),.05));controls.update();renderer.render(scene,camera)}loop();
+
+/* --- PROCEDURAL COMPANION --- */
+function makeCompanion(){
+  const root=new THREE.Group();
+  root.position.set(0,0,0);
+  root.name="DoraemonPrototype";
+
+  const blue=new THREE.MeshStandardMaterial({color:0x168dcc,roughness:.72,metalness:.03});
+  const blueDark=new THREE.MeshStandardMaterial({color:0x0874ad,roughness:.8});
+  const white=new THREE.MeshStandardMaterial({color:0xf5f5f2,roughness:.65});
+  const black=new THREE.MeshStandardMaterial({color:0x101215,roughness:.45});
+  const red=new THREE.MeshStandardMaterial({color:0xd92828,roughness:.55});
+  const yellow=new THREE.MeshStandardMaterial({color:0xf2c328,roughness:.48,metalness:.08});
+
+  const add=(geo,mat,pos,scale=[1,1,1])=>{
+    const m=new THREE.Mesh(geo,mat);m.position.set(...pos);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;root.add(m);return m;
+  };
+
+  // body
+  add(new THREE.SphereGeometry(1,32,20),blue,[0,1.38,0],[.9,1.05,.72]);
+
+  // head
+  const head=add(new THREE.SphereGeometry(1,40,28),blue,[0,2.65,0],[1.16,1.12,.92]);
+
+  // white face / muzzle
+  add(new THREE.SphereGeometry(1,40,24),white,[0,2.53,-.79],[.91,.78,.20]);
+
+  // eyes
+  for(const x of [-.29,.29]){
+    add(new THREE.SphereGeometry(.23,24,16),white,[x,2.96,-.83],[1,.98,.42]);
+    add(new THREE.SphereGeometry(.075,18,12),black,[x,2.96,-1.02],[1,1,.55]);
+  }
+
+  // nose
+  add(new THREE.SphereGeometry(.105,20,16),red,[0,2.70,-1.01],[1,1,.65]);
+
+  // mouth
+  const mouth=new THREE.Mesh(
+    new THREE.TorusGeometry(.30,.025,8,32,Math.PI),
+    black
+  );
+  mouth.position.set(0,2.37,-1.00);mouth.rotation.z=Math.PI;root.add(mouth);
+
+  // neck collar
+  add(new THREE.TorusGeometry(.69,.075,12,48),red,[0,1.95,0],[1,1,.72]);
+
+  // bell
+  add(new THREE.SphereGeometry(.15,24,16),yellow,[0,1.82,-.69],[1,1,.72]);
+  add(new THREE.TorusGeometry(.07,.025,8,24),yellow,[0,1.76,-.79],[1,1,.8]);
+
+  // arms
+  for(const side of [-1,1]){
+    const arm=add(new THREE.SphereGeometry(.38,24,18),blue,[side*.82,1.50,0],[.46,.82,.48]);
+    arm.rotation.z=side*.35;
+    add(new THREE.SphereGeometry(.20,22,16),white,[side*1.03,1.03,-.02],[.85,.72,.85]);
+  }
+
+  // legs + feet
+  for(const side of [-1,1]){
+    add(new THREE.SphereGeometry(.38,24,18),blue,[side*.39,.72,0],[.52,.72,.55]);
+    add(new THREE.SphereGeometry(.48,28,18),white,[side*.45,.38,-.23],[1.0,.58,1.15]);
+  }
+
+  // red tail
+  add(new THREE.SphereGeometry(.16,20,14),red,[0,1.10,.70],[1,1,.75]);
+
+  // whiskers as thin cylinders
+  const whisker=(y,side)=>{
+    const len=.55;
+    const g=new THREE.CylinderGeometry(.012,.012,len,8);
+    const w=new THREE.Mesh(g,black);
+    w.position.set(side*.42,y,-1.00);
+    w.rotation.z=Math.PI/2 + side*(y>2.52?.08:-.08);
+    root.add(w);
+  };
+  [-.13,0,.13].forEach((dy,i)=>{whisker(2.53+dy,-1);whisker(2.53+dy,1)});
+
+  // subtle grounding shadow
+  const shadow=new THREE.Mesh(
+    new THREE.CircleGeometry(1.05,32),
+    new THREE.MeshBasicMaterial({color:0x3b4045,transparent:true,opacity:.20})
+  );
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.015;shadow.scale.set(1,.58,1);root.add(shadow);
+
+  return root;
+}
+const companion=makeCompanion();
+scene.add(companion);
+\nlet companionTime=0; const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);movement(dt);companionTime+=dt;companion.position.y=Math.sin(companionTime*2.0)*.025;companion.rotation.y=Math.sin(companionTime*.7)*.035;controls.update();renderer.render(scene,camera)}loop();
 </script></body></html>
