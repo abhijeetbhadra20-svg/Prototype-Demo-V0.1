@@ -3,53 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D AI Prototype Phase 2</title>
+    <title>3D AI Companion - Phase 3</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0f172a; touch-action: none; }
         canvas { display: block; }
     </style>
 </head>
 <body>
+    <!-- Three.js & GLTF 3D Loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
     <script>
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-        const material = new THREE.MeshNormalMaterial();
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        // Lighting (Taaki 3D model properly dikhe)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+        scene.add(ambientLight);
 
-        camera.position.z = 4;
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
-        let isReacting = false;
-        let reactionTimer = 0;
+        camera.position.set(0, 1.2, 3.2);
 
-        // Touch/Click Event (Gudgudi/Reaction Logic)
-        window.addEventListener('pointerdown', () => {
-            isReacting = true;
-            reactionTimer = 25; // 25 frames tak fast spin & bounce hoga
+        let mixer, character, animations = {};
+
+        // 3D Robot Model Load karna (Official Three.js CDN Model)
+        const loader = new THREE.GLTFLoader();
+        loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
+            character = gltf.scene;
+            character.position.y = -1; // Center position
+            scene.add(character);
+
+            mixer = new THREE.AnimationMixer(character);
+            gltf.animations.forEach((clip) => {
+                animations[clip.name] = mixer.clipAction(clip);
+            });
+
+            // Default Idle Animation
+            if (animations['Idle']) {
+                animations['Idle'].play();
+            }
         });
 
+        // Touch Event (Tap karne par Robot Jump karega)
+        window.addEventListener('pointerdown', () => {
+            if (mixer && animations['Jump']) {
+                if (animations['Idle']) animations['Idle'].stop();
+                
+                animations['Jump'].reset().play();
+
+                setTimeout(() => {
+                    animations['Jump'].stop();
+                    if (animations['Idle']) animations['Idle'].play();
+                }, 1000);
+            }
+        });
+
+        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-
-            if (isReacting && reactionTimer > 0) {
-                cube.rotation.x += 0.2; // Fast spin on touch
-                cube.rotation.y += 0.2;
-                cube.scale.set(1.3, 1.3, 1.3); // Bounce effect
-                reactionTimer--;
-            } else {
-                isReacting = false;
-                cube.rotation.x += 0.01; // Normal speed
-                cube.rotation.y += 0.01;
-                cube.scale.set(1, 1, 1);
-            }
-
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
             renderer.render(scene, camera);
         }
         animate();
