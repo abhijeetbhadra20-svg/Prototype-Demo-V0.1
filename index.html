@@ -224,7 +224,7 @@ async function reconstructTurntable(){
       await new Promise(r=>setTimeout(r,2000));
       const sr=await fetch("/api/reconstruct-status?taskId="+encodeURIComponent(taskId));
       const sj=await sr.json();
-      if(!sr.ok)throw new Error(sj.error||sj.message||"Could not read reconstruction status.");
+      if(!sr.ok){ const d=sj.detail; const detailText=d ? (typeof d==="string"?d:JSON.stringify(d)) : ""; throw new Error((sj.error||sj.message||"Could not read reconstruction status.")+(detailText?" | provider detail: "+detailText:"")); }
       const task=sj.task||{};
       const p=typeof task.progress==="number"?task.progress:null;
       setReconStatus(p!==null?"AI is building the 3D model… "+p+"%":"AI is building the 3D model…");
