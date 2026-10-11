@@ -1,75 +1,238 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D AI Companion Tutor</title>
+    <title>Mushoku Tensei - Volume 16 Chapter 4</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0f172a; font-family: sans-serif; }
-        canvas { display: block; }
+        :root {
+            --bg-color: #1a1a1a;
+            --book-bg: #f4ecd8;
+            --text-color: #2c221e;
+            --accent-color: #8b5a2b;
+            --border-color: #d3c29e;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-color);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #d4af37;
+            text-align: center;
+        }
+
+        .book-container {
+            width: 100%;
+            max-width: 750px;
+            height: 80vh;
+            background-color: var(--book-bg);
+            color: var(--text-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 40px rgba(139, 90, 43, 0.15);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #4a3525;
+        }
+
+        .book-header {
+            background-color: #3b281a;
+            color: #f4ecd8;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .page-content {
+            flex: 1;
+            padding: 30px 40px;
+            overflow-y: auto;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .page-content h2 {
+            color: #5c3a21;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 0;
+            font-size: 1.3rem;
+        }
+
+        .page-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .book-footer {
+            background-color: #3b281a;
+            color: #f4ecd8;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid var(--accent-color);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #653f1d;
+        }
+
+        button:disabled {
+            background-color: #7d7d7d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .page-info {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styling for book pages */
+        .page-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .page-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        .page-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <h1>📖 Mushoku Tensei: Volume 16 - Chapter 4</h1>
+
+    <div class="book-container">
+        <div class="book-header">
+            <span>Nanahoshi's Hypothesis</span>
+            <span id="chapter-title">Part 1</span>
+        </div>
+
+        <div class="page-content" id="page-text">
+            <!-- Content will be injected here via JavaScript -->
+        </div>
+
+        <div class="book-footer">
+            <button id="prev-btn" onclick="changePage(-1)" disabled>Pichla Page</button>
+            <span class="page-info" id="page-info">Page 1 of 3</span>
+            <button id="next-btn" onclick="changePage(1)">Agla Page</button>
+        </div>
+    </div>
 
     <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
-
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
-
-        camera.position.set(0, 1, 3.5);
-
-        let character;
-
-        // Public Doraemon 3D Model URL
-        const loader = new THREE.GLTFLoader();
-        loader.load('https://raw.githubusercontent.com/PatelPratham/Doraemon-3D-Model/main/doraemon.glb', (gltf) => {
-            character = gltf.scene;
-            character.scale.set(0.5, 0.5, 0.5);
-            character.position.set(0, -1, 0);
-            scene.add(character);
-        }, undefined, (err) => {
-            console.error("Model Loading Error:", err);
-        });
-
-        // Touch Interaction
-        let isSpinning = false;
-        window.addEventListener('pointerdown', () => {
-            isSpinning = true;
-            setTimeout(() => { isSpinning = false; }, 800);
-        });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if (character) {
-                if (isSpinning) {
-                    character.rotation.y += 0.15;
-                } else {
-                    character.rotation.y += 0.005;
-                }
+        const pages = [
+            {
+                title: "Part 1 - Human God Ka Sach Aur Dilemma",
+                content: `
+                    <h2>Part 1</h2>
+                    <p>Human God ki baaton par shaq karo, lekin apni hostility bilkul mat dikhao.<br>Mere future self ne mujhe yahi kaha tha.<br>Beshaq, Human God ne mujhe kai aisi baatein batai hain jo thodi shaq karne layak hain.<br>Jaise ki Dragon God duniya ko tabah karne ka plan bana raha hai, ya phir agar Human God mar gaya toh duniya khatam ho jayegi.</p>
+                    <p>Akhir jhoot kahan khatam hota hai aur sach kahan se shuru hota hai?<br>Yahan pakka koi na koi jhoot chupe hue hain.<br>Lekin, mujhe yeh sochna shuru nahi karna chahiye ki kaunsa hissa jhoot hai aur kaunsa sach.<br>Agar maine aisa kiya, toh main kisi aisi contradictory situation mein phans sakta hoon jahan main khud uske jhooth ka shikaar ho jaun.</p>
+                    <p>Sach kahun toh, mujhe nahi lagta ki uska gussa koi acting hai.<br>Mere future self ne sach mein usko ek unpredictable blow diya tha.<br>Phir bhi...<br>Us point par, jo attitude usne liya hai—[Kya tum mere dushman banne ja rahe ho?]—usne mere paas aur koi rasta nahi choda hai.<br>Main Human God ko koi opposition nahi dikhana chahta.</p>
+                    <p>Woh aisi jagah se mere aas-paas ke logon par attack kar sakta hai jahan tak main pahunch nahi sakta, aur unhe bachane ki taakat mere paas nahi hai.<br>Toh fir, mere paas sirf apni allegiance (wafaadari) dikhane ka hi rasta bachta hai.<br>Human God nafrat ke kabil hai, aur shayad woh apne waadon ko poora bhi na kare.</p>
+                    <p>Lekin filhal ke liye, agar main wahi karun jo woh chahta hai, agar main cheezein settle karne ki koshish karun, toh yeh possibility hai ki woh mujhe nazarandaz kar de.<br>Human God ne mujhe Orsted ko maarne ke liye kaha.<br>Baqi baaton ko chhod dein, toh yeh baat bilkul credible lagti hai ki future mein mere descendants (vanshaj) Orsted ke saath milkar Human God ko maar denge.<br>Chahe woh main hoon ya Orsted.</p>
+                    <p>Agar Human God ko jeetne ke liye hum dono mein se kisi ek ka marna zaroori hai, toh theek hai ki main hi zinda bachun.<br>Main apne parivaar ki raksha karoonga.<br>Mere parivaar par nishana saadhne wala Human God hi hai, lekin Human God aisi jagah par hai jahan tak main nahi pahunch sakta.</p>
+                    <p>Kyunki main us tak nahi pahunch sakta, isliye woh mere parivaar par barabar nishana saadhne ki koshish karta rahega.<br>Lekin, Orsted isi duniya mein hai.<br>Woh koi aisa opponent nahi hai jiske khilaf mujhe lagta ho ki main jeet sakta hoon. Sach kahun toh, uske saath ladne ki meri koi ichha nahi hai.<br>Lekin Human God ke mukable, agar uske khilaf ladna pade toh kam se kam ek possibility toh banti hai.<br>Aakhir mein, main yeh avoid karna chahta hoon ki koi galat chunav karne ki wajah se kisi ki jaan chali jaye.</p>
+                `
+            },
+            {
+                title: "Part 2 - Nanahoshi Se Mulaqat Aur Diary Ki Baatein",
+                content: `
+                    <h2>Part 2</h2>
+                    <p>Dream mein Human God se milne ke agle din, main Sylphy ke saath adventurer's guild gaya aur ek letter mail kiya.<br>Uske baad, Sylphy ke saath main Sky Fortress wapas laut aaya.<br>Main entrance par hi Sylphy se alag ho gaya, aur Nanahoshi ke room ki taraf chal pada.</p>
+                    <p>Mujhe Orsted ko maarne ke liye kaha gaya tha, toh main soch raha tha ki mujhe kis se salah leni chahiye aur tabhi mujhe uska khayaal aaya.<br>Shayad isliye kyunki mere future self ne mujhe chhodte waqt kaha tha: Nanahoshi se salah lena.<br>Uske alawa, agar Nanahoshi hui, toh use shayad pata hoga ki is waqt Orsted kahan hai.<br>Pehle mujhe uske paas jaana hoga.</p>
+                    <p>Aaj nahi toh kal, mujhe Sylphy aur Roxy se bhi is baare mein baat karni hi padegi, lekin...<br>Mujhe darr hai ki jab unhe yeh kahani pata chalegi toh woh khud ko hi doshi manne lagengi.<br>Chahe woh Sylphy ho, Roxy ho, ya bachhe hon, inmein se kisi ki bhi isme koi galti nahi hai.<br>Isliye mujhe apne shabdon ko bahut dhyaan se chunna chahiye.<br>Lekin kehne ke liye sahi shabd kya honge, iska mujhe koi andaza nahi hai.</p>
+                    <p><strong>"Hey."</strong><br><strong>"Oh. Tum achanak itni jaldi wapas aa gaye?"</strong><br>Kuch din pehle hi gujre the, par aisa lag raha tha ki Nanahoshi abhi tak puri tarah recover nahi hui thi aur bistar par hi thi.<br>Fir bhi, uske chehre ka rang pehle se thoda behtar lag raha tha.</p>
+                    <p><strong>"Nanahoshi, main tumhare liye kuch get well presents laya hoon."</strong><br><strong>"Sorry for troubling you."</strong><br>Maine market se kharide hue fruits ka dabba table par rakh diya.<br>Is mausam mein yeh thode mehnat-talab aur mehenge the, lekin agar aapko kisi se koi favor maangna ho, toh kuch etiquette hote hain jinhe follow karna padta hai.<br>Chahe hum dono give-and-take wale rishte mein hi kyun na hon.</p>
+                    <p><strong>"Tumhara chehra bada dara hua lag raha hai. Kuch hua kya?"</strong> Nanahoshi ne ek uneasy look ke saath pucha.<br>Pata nahi main itna dara hua chehra kyu bana raha tha.<br>Shayad main bana hi raha hounga.<br>Pakka, mera abhi ka chehra Nanahoshi se bhi zyada bura lag raha hoga.</p>
+                    <p><strong>"Baat thodi achanak ki hai, par main chahta hoon ki tum ab mera ek favor return karo."</strong><br><strong>"Tum mujhse kya karwana chahte ho?"</strong><br><strong>"Pehle tumhe meri baat sunni hogi, chahe shuru mein yeh thoda unbelievable lage."</strong><br><strong>"Main samajh gayi."</strong></p>
+                    <p>Maine dheere-dheere batana shuru kiya ki kaise mera future self past mein wapas aaya tha.<br>Humne kya baatein ki thi, jo events hone wale hain, diary mein kya likha tha, aur kaise un sabhi baaton ko support karte hue, Human God ek gusse wale chehre ke saath mere sapne mein aaya tha. Mere descendants jo aane wale samay mein Orsted ke sath milkar Human God ko maarenge. Aur aakhiri mein, Human God ka mujhe Orsted ko maarne ke liye kehna.<br>Maine use sab kuch bata diya.</p>
+                `
+            },
+            {
+                title: "Part 3 - Nanahoshi Ka Hypothesis Aur Naya Faisla",
+                content: `
+                    <h2>Part 3</h2>
+                    <p>Jab main jaaga, Sylphy pehle se hi mere paas so rahi thi.<br>Uski aam taur par cute, soti hui chehra meri vision ko bhare hue tha.<br>Mujhe yaad nahi tha ki main uske sath soya tha.<br>Iska matlab yeh tha ki jab main soya tha, uske kuch der baad woh chupke se andar aa gayi hogi.<br>Agar main hila, toh shayad woh jaag jayegi.<br>Shayad woh Perugius ke sath hui charcha ke baare mein mujhse baat karna chahti thi.<br>Aisi baat hai toh mujhe afsos hai.</p>
+                    <p>Maine Sylphy ke haathon ko khola jo meri kamar ke ird-gird lipe hue the. Uske baalon ko sehlane ke baad, main bistar se uth gaya.<br><strong>"nn… Rudi… let's kiss…"</strong><br>Uski pyari neend mein bolne wali baatein aur uske defenseless sote hue chehre ko dekhkar, yeh woh samay hota jab main aam taur par horny ho jata.<br>Badnaseebi se, mere paas erotic baaton ke baare mein sochne ka samay nahi hai.</p>
+                    <p>Apne haathon se bed hair theek karte hue, taaki Sylphy na jaag jaye, main chupchap room se bahar nikal gaya.<br>Khidki ke bahar, aasmaan pehle se hi taaron se bhara hua tha.<br>Raat ka samay ho chuka tha.<br>Kyunki is duniya mein taare bhi hote hain, toh kya iska matlab space bhi hota hai?<br>Aisi baatein sochte hue, main hallway mein chalne laga.</p>
+                    <p><strong>"Tum is raat ko itni der kahan ja rahe ho?"</strong><br><strong>"Waa?"</strong><br>Hallway ke kone mein, ek yellow mask pehne hue aadmi ne achanak mujhe awaaz di.<br><strong>"...Arumanfi."</strong><br><strong>"Yeh woh samay hai jab insaan sote hain. Tum is late hour mein kahan ja rahe ho?"</strong><br><strong>"Nanahoshi ke room ki taraf. Kya woh abhi tak soyi nahi hai?"</strong><br><strong>"Usne abhi mujhse kuch pen aur paper maange hain. Woh abhi bhi jaag rahi hai."</strong><br><strong>"Shukriya."</strong></p>
+                    <p>Mera dil thoda tez dhadak raha tha, aur maine wahan se chhod diya.<br>Mujhe hairani hoti hai ki spirits sote nahi hain kya.<br>Well, woh pakka koi insaan nahi hai.<br>Ek 24-hour security guard jo man ki shanti deta hai.</p>
+                    <p><strong>"Main tumse bheek maangta hoon. Please meri madad karo."</strong><br>Sky Fortress ka farsh thanda aur sakht tha.<br><strong>"Wahan ek possibility hai ki Human God achanak apna man badal le. Main ek aisa din nahi dekhna chahta jahan mujhe pata chale ki mera poora parivaar massacre ho gaya hai kyunki humne hesitate kiya..."</strong><br><strong>"Ruko, tum kya kar rahe ho!? Use roko!"</strong><br><strong>"Main kisi ko khona nahi chahta. Please meri madad karo."</strong></p>
+                    <p>Nanahoshi bed se uth gayi.<br>Mere kandhe ko pakadkar, usne mujhe zabardasti apna chehra upar karne par majboor kiya.<br><strong>"Main samajh gayi... Main madad karungi, toh please us pose mein mat raho."</strong><br>Nanahoshi ke thake hue chehre ko dekhkar, maine apne dimaag mein usse maafi maangi.<br>Usi samay, [Yeh achhe se ho gaya], maine socha.<br>Apne dil ke andar, main ek triumphant pose assume kar raha tha.<br><strong>"Main tumhara karzdar hoon."</strong></p>
+                `
             }
-            renderer.render(scene, camera);
-        }
-        animate();
+        ];
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        let currentPage = 0;
+
+        function updateBook() {
+            const pageText = document.getElementById('page-text');
+            const chapterTitle = document.getElementById('chapter-title');
+            const pageInfo = document.getElementById('page-info');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            // Load content
+            pageText.innerHTML = pages[currentPage].content;
+            chapterTitle.innerText = pages[currentPage].title.split(' - ')[0];
+            pageInfo.innerText = `Page ${currentPage + 1} of ${pages.length}`;
+
+            // Handle scroll to top on page turn
+            pageText.scrollTop = 0;
+
+            // Handle button states
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = currentPage === pages.length - 1;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= pages.length) currentPage = pages.length - 1;
+            updateBook();
+        }
+
+        // Initialize first page
+        updateBook();
     </script>
 </body>
 </html>
